@@ -1,7 +1,7 @@
 @echo off
 rem Opens the agent dashboard in its own Chrome or Edge window (no tabs or
 rem address bar), signed in with your normal browser profile. Falls back to
-rem the default browser. See tools\agent-dashboard\README.md.
+rem the default browser. See dashboard\README.md.
 setlocal
 set "URL=https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G"
 if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (start "" "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --app=%URL% & exit /b 0)

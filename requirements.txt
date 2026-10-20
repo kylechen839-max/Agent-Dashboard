@@ -1,0 +1,3 @@
+# Tests only: the dashboard is one static page published as a claude.ai
+# artifact, so nothing here runs on a server.
+pytest>=8.0

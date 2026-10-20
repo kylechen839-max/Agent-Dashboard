@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Opens the Hey Claude PC hub in its own Chrome or Edge window (no tabs or
+# Opens the agent dashboard in its own Chrome or Edge window (no tabs or
 # address bar), signed in with your normal browser profile. Falls back to
-# the default browser. See tools/agent-dashboard/README.md.
-# Start Hey Claude's web app first, with [devteam] hub = true.
+# the default browser. See dashboard/README.md.
 set -euo pipefail
 
-URL="http://127.0.0.1:8765/devteam"
+URL="https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G"
 
 # Checked silently: asking `open` to find the app (-Ra) shows it in Finder
 # on every launch.

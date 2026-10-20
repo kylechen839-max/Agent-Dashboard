@@ -1,0 +1,5 @@
+# Windows launchers need CRLF; shell scripts must stay LF (bash fails on
+# "bash\r" in the shebang when core.autocrlf=true checks them out as CRLF).
+*.cmd text eol=crlf
+*.command text eol=lf
+*.sh text eol=lf
