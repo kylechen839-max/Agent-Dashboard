@@ -341,9 +341,11 @@ def test_grid_layout_rules():
     assert '#coords[data-max]>.tile:not([data-max]){display:none}' in page
     assert '.tile[data-cols="3"]{grid-column:span 3}' in page
     assert '.tile[data-rows="2"]{grid-row:span 2}' in page
-    # A dark mono window body in both themes.
-    assert "background:#12161b;color:#d7dde4;font-family:var(--mono)" in page
-    assert "color-scheme:dark" in page.split(".tile-body{", 1)[1].split("}", 1)[0]
+    # The window body is the card itself, in the page font: no dark
+    # terminal panel in either theme.
+    body = page.split(".tile-body{", 1)[1].split("}", 1)[0]
+    assert "var(--mono)" not in body and "color-scheme:dark" not in body, body
+    assert "#12161b" not in page.lower()
     # Run colours: 8 hues per theme.
     light = ["#1d4ed8", "#0f766e", "#4d7c0f", "#b45309", "#be123c", "#a21caf", "#6d28d9", "#0e7490"]
     dark = ["#7aa2ff", "#2dd4bf", "#a3e635", "#fbbf24", "#fb7185", "#e879f9", "#c4b5fd", "#67e8f9"]

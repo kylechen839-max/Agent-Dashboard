@@ -46,7 +46,7 @@ tab in the default browser if neither is installed.
 - **Windows:** double-click `dashboard\desktop\open-dashboard.cmd`.
 - **macOS:** double-click `dashboard/desktop/open-dashboard.command`
   (the first time, right-click → Open to get past Gatekeeper).
-- **From the page:** **Get desktop app** (top right) saves the same
+- **From the page:** **Get desktop app** (in the ⋯ menu, top right) saves the same
   launcher as a small zip.
 
 More, including pinning to the taskbar or Dock, is in

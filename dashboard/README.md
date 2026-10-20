@@ -28,7 +28,7 @@ buttons at the top (the choice is remembered on that device):
   session has died.
 - **Desktop launchers:** `desktop/open-dashboard.cmd` (Windows) and
   `desktop/open-dashboard.command` (macOS), also offered by the page's
-  **Get desktop app** button.
+  **Get desktop app** (in its ⋯ menu).
 
 ## Manifest (the master sets it when publishing)
 
@@ -216,15 +216,37 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   more than fit 260 px each (1 → 1, 2–4 → 2, 5–9 → 3, 10 → 4). Rows are
   at least 180 px and share the height. It re-tiles when the window is
   resized.
-- **A window** has a light title bar (state badge, "Coordinator" or the
-  role, the feature or role · piece, the round, a run-colour square,
-  Open session, PR links, maximize) over a dark monospace body in both
-  themes. The coordinator window keeps its `run <id>` line, each row's
-  phase and round, the elapsed time and the newest 5 `status_lines`,
-  then the chat. Agent windows link to their run's master session.
+- **A window** is one soft card (no border, a light shadow, the page's
+  font in both themes). Its head reads: a run-colour square, the title,
+  a "Question" chip when one is open, the state badge (a pill with a
+  dot: green running, blue done or PR ready, red failed or blocked,
+  amber silent or stopped, grey queued or unknown) and, for a
+  coordinator with several run rows, the round. A coordinator window
+  says "Coordinator" (or "Coordinator · Last run") over its title and
+  keeps Open session and its PR links on a second row. Every window's
+  controls (the ⠿ handle at the top centre, 🔍, –, ⤢ and the ◢ corner)
+  show when you point at the window or Tab into it, and stay shown while
+  it is maximized or picked up (and always on a screen without hover).
+  An agent window's title is its role (· piece); its Open session and PR
+  links show with its buttons, on hover, in a small panel just under
+  its title row on the right (so the badge stays readable); its body is "round N · started HH:MM · 30 min", its outcome and
+  any problem as an amber or red note. Agent windows link to their run's
+  master session.
+- **Coordinator body.** One muted meta line, "judging · round 2 · updated
+  4 min ago · elapsed 1 h 35 min" (with several run rows, one line per
+  row, each with its problem note, then the elapsed time); a blocker or
+  "no update" reason shows as an amber note (red when silent). Under it,
+  **History**: one row with the newest `status_lines` entry (its time
+  and text, cut to fit; the full text is in its tooltip) and "History
+  (N) ▸" on the right, N being the number of status lines shown (the
+  newest 5). Click it to unfold every line and the `run <id>`; it stays
+  open across updates; opening or closing it keeps a transcript that was
+  at the bottom at the bottom. With no status lines it reads "No status lines
+  yet" and "Details" (just the run id). Then the chat. An open History
+  scrolls within about a third of the window so the box always shows.
 - **Run colour:** a hash of the run's root id picks one of 8 hues; the
   coordinator and every agent of the run (pieces included) share it, as
-  a coloured square, a 3 px top bar and the coordinator's border.
+  a coloured square and a 2 px line along the window's top edge.
 - **Maximize** (the ⤢ button) makes one window fill
   the workspace; the others are hidden, not removed. Esc or the window's
   ⤡ button (same place and style, labelled "Restore <title>") goes back,
@@ -235,9 +257,10 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   **All recent** (every session with a row from the last 14 days).
   Retired agents (no change for 7 days) stay hidden. The choice is kept
   in localStorage under `agentDashboard.filter`, written only when you
-  press one. The toolbar also shows the window count ("5 windows · 2
-  hidden") and "N agents without a run" (live agents whose run has no
-  row at all).
+  press one. At its right end the toolbar shows, in small grey text,
+  the connection ("live", red when it is lost), the window count ("5
+  windows · 2 hidden") and "N agents without a run" (live agents whose
+  run has no row at all).
 - **Coordinator** picker (a native select in the toolbar): **All** (the
   default) or one coordinator session, listed by `session_url` and
   labelled with its newest run's feature plus the last 6 characters of
@@ -261,7 +284,13 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   its chat stays subscribed. Hiding the maximized window restores the
   workspace; hiding one mid-drag cancels the drag. **Reset layout** also
   shows every hidden window again.
-- **Close idle agents** (toolbar) hides, in one click, every agent window
+- **The ⋯ menu** (top right, next to the view switch) holds **Close idle
+  agents**, **Auto-close idle agents** (a ✓ when on) and **Reset layout**
+  on Grid, and **Get desktop app** on both views (on Runs it shows only
+  when Get desktop app is available). Close idle and Reset close the
+  menu; so does Esc (focus goes back to ⋯) or a press anywhere outside
+  it, which also closes the Hidden menu.
+- **Close idle agents** (⋯ menu) hides, in one click, every agent window
   on screen whose state is done, failed, stopped or silent (never
   running or queued, never a coordinator), as `h: 1`, saved once, and
   says "Closed N idle agent windows". It follows the Coordinator picker
@@ -298,8 +327,10 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   shown (by key code, so it works on a Mac too); `?` (or the toolbar's
   ? button) toggles a small shortcuts panel, which Esc or Close shuts,
   returning focus where it was. Esc keeps its order: a quote in the box,
-  then an open chat search in the window that has focus, then the help
-  panel, then a maximized window.
+  then an open ⋯ menu (on Runs too), then an open chat search in the
+  window that has focus, then the help panel, then a maximized window.
+- **The footer** (how the Grid works) is one line, cut to fit; point at
+  it or Tab to it to read it all.
 - **Moving and resizing.** Drag a window by the handle in
   its title bar, or Tab to the handle, press Enter, then the arrow keys
   (Enter again drops it). Drag the corner handle to resize: 1–3 columns
@@ -356,7 +387,8 @@ Each coordinator window with a session link has a transcript and a box.
   and at most once a minute. `available` shows the box; `no_session`
   shows the box under an amber banner, "No coordinator is watching this
   dashboard right now, so messages won't wake it. Open its session and
-  ask it to watch the dashboard.", with the window's Open session link;
+  ask it to watch the dashboard." (one line, cut to fit; pointing at it
+  shows it all), with the window's Open session link;
   anything else hides it. `no_session` is artifact-wide (no Claude
   session at all is watching), so every coordinator window shows the
   banner at once.
@@ -393,17 +425,27 @@ Each coordinator window with a session link has a transcript and a box.
   | `claude_unavailable` | nothing was posted; re-checks `canSendToClaude` |
   | `upstream_error`, unknown | "May have been sent; check before resending." |
 
-- **The look** follows the Claude Code app's session view, in its own
-  light (#faf9f7) and dark (#1f1e1d) palette with the system UI font at
-  15 px. Coordinator messages are full width with no bubble, under a
-  small "Coordinator · 7:55 PM" line (the date too when not today).
-  Kyle's messages are right-aligned grey bubbles (at most 75 % wide)
-  with the delivery line under them. Activity rows are compact muted
-  lines (✓ when the text starts with a word like Ran, Passed, Done,
-  Merged or Pushed, else •), and consecutive ones collapse into one
-  "N steps ▸" row that expands. The working line is an animated ✻
-  (still under reduced motion), "Working…", the step and the minutes.
-  The box is a rounded field with an arrow Send button inside it.
+- **The look** follows the Claude app: the chat sits on the window's own
+  card under a thin divider, in the page's palette and font at 14.5 px
+  (when maximized, a centred column at most 860 px wide). Coordinator
+  messages are full width with no bubble, under a small time line (the
+  date too when not today); other kinds than `update` keep a quiet
+  "Coordinator · report" tag (for `update` the word is read out to
+  screen readers only). Kyle's messages are right-aligned grey bubbles
+  (at most 80 % wide). The open question has a soft amber background
+  and an amber edge. Activity rows are compact muted lines (✓ when the
+  text starts with a word like Ran, Passed, Done, Merged or Pushed, else
+  •), and consecutive ones collapse into one "N steps ▸" row that
+  expands. The box is a rounded field (blue edge when focused) with a
+  round blue Send button inside it.
+- **The delivery line** under Kyle's message is small: Delivered is a
+  ✓, Seen is a blue ✓✓ and the time, Sending, Working and Queued are the
+  ✻ and one line cut to fit; Not picked up, Posted and Not sent show
+  their full text, amber or red, with Open session. Its tooltip always
+  has the full text and time, and screen readers hear the words.
+- **Presence** (above the box) is a dot and its text, not a pill; while
+  it reads "In task: <step> · 4m" the separate "✻ Working… 3m" row is
+  hidden (it would say the same thing).
 - **The transcript** is the coordinator's mirror (below), newest 200,
   oldest first, each message with its time; coordinator messages are
   rendered as markdown (headings, bold, em, code, fences, quotes, lists,
@@ -437,6 +479,11 @@ need a real browser on a real keyboard:
   key code, and that no symbol lands anywhere.
 - **`/` and `?`** on both: `/` puts the cursor in a chat box; `?` opens
   the shortcuts panel and Esc closes it, with focus back where it was.
+- **The look on Kyle's screens** (Windows and macOS, light and dark):
+  text is crisp in the system font (Segoe UI Variable on Windows), the
+  window controls appear when the pointer is over a window and when you
+  Tab into one, the ⋯ menu opens under its button and closes on a click
+  outside or Esc, and the one-line footer opens in full on hover.
 
 ## Chat mirror schema (Kyle's private subtree, written only by the master)
 
@@ -465,7 +512,7 @@ CI on PR #4") and `{state: "idle", at}` when its turn ends. The page
 subscribes to this one document per loaded conversation (the same cap
 of 8, paused on Runs).
 
-**Presence pill** (always shown above the box, from the same status):
+**Presence line** (always shown above the box, from the same status):
 "● In task: <step> · 4m" (green, a pulsing dot that is still under
 reduced motion) while `working` and `at` is at most 30 minutes old;
 "● In task (no update for 45m)" (amber) from 30 to 120 minutes; "○ Idle
@@ -476,11 +523,11 @@ coordinator is in a task, the line reads "Queued · coordinator is
 mid-task; it reads new messages when this step ends" (calmly animated)
 instead of the 2-minute amber line, which shows only when the
 coordinator is not in a task. The working row above the box no longer
-repeats the step; the pill shows it. While `state` is `working` and `at` is under 15
-minutes old, it shows a "Coordinator · working" row above the box: three
-pulsing dots (still under reduced motion), the step text and the time
-since `at`, refreshed every minute. Idle, missing or stale shows
-nothing. Under Kyle's latest message from the page, a delivery line
+repeats the step; the presence line shows it. While `state` is `working` and `at` is under 15
+minutes old, the page builds a "✻ Working… 3m" row above the box (the
+time since `at`, refreshed every minute), but it is hidden while the
+presence line reads "In task", which carries the same step and time.
+Idle, missing or stale shows nothing. Under Kyle's latest message from the page, a delivery line
 shows each stage: "Sending…" (animated) while `sendToClaude` is in
 flight, "Delivered" once claude.ai accepted it, "Seen by coordinator"
 and the time once `status.seen_ref` names its nonce (or its mirrored
@@ -520,7 +567,7 @@ browser.
   site as an app). The browser makes the app window and a Start menu or
   Launchpad entry for you.
 
-- **Get desktop app** (top right of the page): choose Windows or Mac for
+- **Get desktop app** (in the ⋯ menu at the top right of the page): choose Windows or Mac for
   the dashboard. The page saves a zip holding that one launcher, the same text as
   `desktop/` (claude.ai saves only allow-listed file types, and `.cmd` /
   `.command` are not on the list; the zip keeps the Windows file's CRLF
