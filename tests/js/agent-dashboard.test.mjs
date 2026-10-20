@@ -1,6 +1,6 @@
 // node --test tests/js/agent-dashboard.test.mjs  (Node 18+; no packages needed)
 //
-// Runs the dev-team dashboard page's own <script> (tools/agent-dashboard/
+// Runs the dev-team dashboard page's own <script> (dashboard/
 // index.html) in node:vm with a minimal fake document, a fake
 // window.claude.use("db") (one query per collection: runs, agents and each
 // chat mirror), a fake use("user") and use("comments") (canSendToClaude,
@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const PAGE = readFileSync(new URL('../../tools/agent-dashboard/index.html', import.meta.url), 'utf8');
+const PAGE = readFileSync(new URL('../../dashboard/index.html', import.meta.url), 'utf8');
 const SCRIPT = (() => {
   const m = PAGE.match(/<script>([\s\S]*?)<\/script>/);
   assert.ok(m, 'page has an inline <script>');
@@ -187,7 +187,7 @@ const PAGE_IDS = {
   'grid-count': 'p', 'grid-conn': 'p', coords: 'div', 'grid-hidden': 'p', 'grid-reset': 'button', 'grid-live': 'p',
   'grid-foot': 'footer', 'grid-tray': 'details', 'grid-tray-sum': 'summary', 'grid-tray-list': 'div',
   'grid-showall': 'button', 'grid-coord': 'select', 'grid-coord-note': 'p', 'grid-coord-forget': 'button', getapp: 'div', 'getapp-btn': 'button', 'getapp-menu': 'div', 'getapp-hint': 'p',
-  'getapp-dash-win': 'button', 'getapp-dash-mac': 'button', 'getapp-hub-win': 'button', 'getapp-hub-mac': 'button',
+  'getapp-dash-win': 'button', 'getapp-dash-mac': 'button',
   'grid-close-idle': 'button', 'grid-autoclose': 'button',
 };
 
@@ -3196,7 +3196,7 @@ test('auto-close: leaving a maximized window that went idle keeps it shown', asy
 
 // ---- "Get desktop app": the launchers, saved through downloads ----
 
-const DESKTOP = (name) => readFileSync(new URL(`../../tools/agent-dashboard/desktop/${name}`, import.meta.url), 'latin1');
+const DESKTOP = (name) => readFileSync(new URL(`../../dashboard/desktop/${name}`, import.meta.url), 'latin1');
 
 // The one stored file in a zip: [name, text, unix mode or 0].
 function unzipOne(bytes) {
@@ -3252,18 +3252,14 @@ test('get desktop app: nothing is looked up or saved at load; a choice saves exa
   assert.ok(!mtext.includes('\r'));
   assert.equal(mmode, 0o100755);
   assert.match(page.ids['getapp-hint'].textContent, /right-click it and choose Open/);
-  // The PC hub, from the same chooser and the same generator.
-  page.ids['getapp-hub-win'].click();
-  page.ids['getapp-hub-win'].click();  // a second click while the first save is open does nothing
+  page.ids['getapp-dash-win'].click();
+  page.ids['getapp-dash-win'].click();  // a second click while the first save is open does nothing
   await settle();
-  page.ids['getapp-hub-mac'].click();
-  await settle();
-  assert.deepEqual(downloads.calls.save.map((r) => r.filename).slice(2), ['open-hub-windows.zip', 'open-hub-mac.zip']);
-  for (const r of downloads.calls.save.slice(2)) {
-    const [n, t] = unzipOne(r.data);
-    assert.equal(t, DESKTOP(n));
-    assert.match(t, /http:\/\/127\.0\.0\.1:8765\/devteam/);
-  }
+  assert.deepEqual(downloads.calls.save.map((r) => r.filename),
+    ['open-dashboard-windows.zip', 'open-dashboard-mac.zip', 'open-dashboard-windows.zip']);
+  // The dashboard is the only launcher: no PC hub choice or copy.
+  assert.throws(() => page.api.launcherText('hub', 'win'), /reading 'what'/);
+  assert.doesNotMatch(PAGE, /getapp-hub|open-hub|PC hub|127\.0\.0\.1/);
   assert.equal(page.uses.filter((u) => u === 'downloads').length, 1, 'looked up once');
 });
 

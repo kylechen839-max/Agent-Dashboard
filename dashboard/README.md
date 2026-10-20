@@ -19,16 +19,16 @@ buttons at the top (the choice is remembered on that device):
   artifact with the `db`, `user`, `comments` and `downloads` capabilities;
   open it signed in on a desktop browser; it can have its own window, see
   [Desktop window](#desktop-window)). The page is desktop only: it has no
-  phone layout. On the phone, Hey Claude's voice link
-  (docs/COORDINATOR_LINK.md) reaches the same coordinator.
-- **Source:** `index.html` in this folder. The master publishes it to the
-  artifact. Nothing here is served by the Hey Claude app.
+  phone layout. On the phone, Hey Claude's voice link (in the Hey Claude
+  repo, kylechen839-max/Claude-Personal-Assistant) reaches the same
+  coordinator.
+- **Source:** `index.html` in this folder. A Claude Code session (the
+  master) publishes it to the artifact. Nothing here runs on a server.
 - **Watchdog:** `WATCHDOG.md`, an hourly trigger that marks runs whose
   session has died.
 - **Desktop launchers:** `desktop/open-dashboard.cmd` (Windows) and
   `desktop/open-dashboard.command` (macOS), also offered by the page's
-  **Get desktop app** button; `desktop/open-hub.cmd` and
-  `desktop/open-hub.command` open the PC hub (see [PC hub](#pc-hub)).
+  **Get desktop app** button.
 
 ## Manifest (the master sets it when publishing)
 
@@ -456,8 +456,7 @@ browser.
   Launchpad entry for you.
 
 - **Get desktop app** (top right of the page): choose Windows or Mac for
-  the dashboard, or for the PC hub ("needs Hey Claude running on this
-  PC"). The page saves a zip holding that one launcher, the same text as
+  the dashboard. The page saves a zip holding that one launcher, the same text as
   `desktop/` (claude.ai saves only allow-listed file types, and `.cmd` /
   `.command` are not on the list; the zip keeps the Windows file's CRLF
   and the Mac file's executable bit). Unzip it and double-click the
@@ -471,8 +470,10 @@ start signed out of claude.ai, so neither Runs nor Grid would load.
 - **Only the master writes the dashboard** (`runs` and `agents`).
   Subagents never do, and the watchdog never reads or writes `agents`.
   The page never writes the db. Its one write anywhere is the chat
-  box's comment (Kyle's own press), and in the browser's localStorage
-  it keeps only its view, window layout and filter.
+  box's comment (Kyle's own press) and the one `assets.delete` for an
+  attachment he removes before sending, and in the browser's localStorage
+  it keeps only its view, window layout, filter, coordinator pick and
+  auto-close toggle.
 - **No log text, transcripts, conversation text, comment text or
   secrets in rows**, except Kyle's private chat mirror under
   `data/users/<id>/`, which only he can read. Rows hold names, links, counts, short reasons and
@@ -486,20 +487,7 @@ start signed out of claude.ai, so neither Runs nor Grid would load.
   the run's scope only: it can re-order or stop work, but never changes
   permissions, touches secrets or routes around a denial (see the skill).
 - **Permissions:** ArtifactData and ArtifactComments are both
-  pre-approved in `.claude/settings.json`.
+  pre-approved in the Hey Claude repo's `.claude/settings.json`, where
+  the master runs.
 - Out of scope on purpose: kill/approve/archive buttons, reading rows
   aloud, the page reading threads.
-
-## PC hub
-
-A desktop-only page served by Hey Claude's own web app on the PC, at
-`http://127.0.0.1:8765/devteam`, for chatting with the coordinator(s)
-with replies in about the time Notion takes (docs/COORDINATOR_LINK.md).
-One window per session in `[devteam] hub_sessions` (at most 8), auto-tiled,
-with maximize (Esc restores) and the same hide/restore: hidden windows
-are kept per viewer in localStorage under `heyClaudeHub.layout.v1`
-(`{v: 1, tiles: {<session>: {h: 1}}}`, at most 8, pruned to the hub's
-windows); the server keeps polling, so a restored window is up to date,
-and the Hidden menu marks one with a new reply or a blocked message.
-Open it with `desktop/open-hub.cmd` or `desktop/open-hub.command` once the
-web app runs with `[devteam] hub = true`.

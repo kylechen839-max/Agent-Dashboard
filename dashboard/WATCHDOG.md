@@ -5,7 +5,8 @@ writing, so its row would just sit on "building". The page already flags
 that row as silent from `updated_at`. The watchdog makes it definite: once
 an hour it asks the session API what really happened, marks dead runs
 `dead`, and sends a phone push. It is the backstop. The master's own time
-limits (`.claude/skills/build-feature/SKILL.md`) are what stop a run
+limits (`.claude/skills/build-feature/SKILL.md` in the Hey Claude repo)
+are what stop a run
 that is still alive.
 
 It also records each live session's status bucket in the row's `watch`
@@ -19,7 +20,9 @@ the watchdog and the page agree.
 
 ## Setup (the master does this once)
 
-The watchdog must run in a session **with the repo checked out**. A
+The watchdog must run in a session **with the Hey Claude repo checked out**
+(kylechen839-max/Claude-Personal-Assistant, where the master and its
+`.claude/settings.json` live; not this repo). A
 session without the repo stalled on the ArtifactData permission prompt
 (probe 1). A session attached to the repo wrote cleanly (probe 2), because
 `.claude/settings.json` allows `ArtifactData`.
