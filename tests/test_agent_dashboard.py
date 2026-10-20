@@ -219,7 +219,7 @@ def test_page_has_no_connector_code():
     page = _page()
     for banned in ('"mcp"', "Claude Code Remote", "list_sessions", "list_events", "send_message",
                    "callTool", "watchTool", "onSendToClaude", "customAnchors", ".openComposer(",
-                   ".reply(", "comments.create(", "comments.resolve(", "comments.delete(",
+                   "comments.resolve(", "comments.delete(",
                    "TextEncoder"):
         assert banned not in page, banned
 
@@ -237,6 +237,31 @@ def test_page_posts_comments_only_from_the_chat_box():
     assert "sendChat(t);" in _function(page, "function makeTile(")
     # The anchor is read on the window's title at the gesture.
     assert "comments.anchorFor(t.h2)" in _function(page, "async function sendChat(")
+    # With no watching session (canSendToClaude "no_session", read at the
+    # press) the same text posts as a plain comment: one create and one
+    # reply call site, both inside sendChat, nothing else posts.
+    send = _function(page, "async function sendChat(")
+    assert page.count("comments.create(") == 1 and page.count(".reply(") == 1
+    assert "comments.create({anchor: await anchorP, text: textOut})" in send
+    assert "comments.reply(thread, textOut)" in send
+    assert 'const plain = sendState === "no_session";' in send
+
+
+def test_page_alerts_without_sound_or_notifications():
+    page = _page()
+    # The unanswered tracker is visual only, on the page. The page never
+    # sets document.title: in the claude.ai iframe it wouldn't reach the tab.
+    for banned in ("Notification", "new Audio", "AudioContext", ".play(", "navigator.vibrate", "document.title"):
+        assert banned not in page, banned
+
+
+def test_listening_check_has_one_poller():
+    page = _page()
+    # The listening pill, the banner and the box share one canSendToClaude
+    # check; the only interval is the minute re-render.
+    assert page.count(".canSendToClaude(") == 1
+    assert page.count("setInterval(") == 1
+    assert "checkSend(true)" in page.split('window.addEventListener("focus"', 1)[1].split("});", 1)[0]
 
 
 def test_page_uploads_and_deletes_assets_only_from_the_chat_box():

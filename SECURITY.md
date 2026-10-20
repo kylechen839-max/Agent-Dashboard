@@ -22,6 +22,12 @@ Claude repo.
   http(s) URLs. Nobody acts on a row as an instruction.
 - **Nothing external.** No CDN scripts, fonts, styles or images; no
   `console` logging; nothing sent on a timer.
+- **Alerts stay on the page.** The "N waiting" badge is visual only: no
+  sound, no Notification API and no `document.title` writes (a test bans
+  them).
+- **Chat search** matches plain text in memory and only hides or shows
+  the existing message elements; the query is never rendered as markup,
+  stored or sent.
 
 ## Deliberate choices (kept from the Hey Claude repo's SECURITY.md)
 
@@ -29,7 +35,15 @@ Claude repo.
   declares the full `comments` grant so each coordinator window's chat
   box can call `comments.sendToClaude`. There is exactly one call site,
   run only from Kyle's own Send press or Enter, one call at a time, never
-  at load, on a timer or as a retry (a test pins this). claude.ai asks
+  at load, on a timer or as a retry (a test pins this). When
+  `canSendToClaude()` last said `no_session` (no Claude session watching
+  the artifact), the same press posts the same bounded text as a plain
+  comment instead (`comments.create` on the window title, or
+  `comments.reply` into this visit's thread): one call site each, in the
+  same function, under the same rules, so a session that watches later
+  can read it. `sendToClaude` itself would post nothing then
+  (`claude_unavailable`). The page still never resolves or deletes a
+  thread and never reads one. claude.ai asks
   Kyle for consent at the first send, and a refusal hides the box. The
   text is bounded (4000 UTF-8 bytes, control characters removed) and
   prefixed with the run id and a nonce. The page can't read threads,

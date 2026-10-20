@@ -9,7 +9,8 @@
    master writes). Rows are untrusted data: text only, links only to the
    two allowed prefixes. The page never writes to the db. A coordinator
    window's chat box posts Kyle's message as a comment sent to Claude
-   (comments.sendToClaude, only from his own click or Enter) and shows the
+   (comments.sendToClaude, only from his own click or Enter; a plain
+   comments.create/reply when no Claude session is watching) and shows the
    coordinator's private mirror of the conversation from Kyle's own
    data/users/<id>/ subtree. Window order and size are kept per viewer in
    localStorage. */
@@ -359,6 +360,25 @@ dl{gap:3px 16px}
 #grid-close-idle,#grid-autoclose{color:var(--accent);background:var(--card);border:1px solid var(--line);font-size:.8rem;padding:4px 12px;border-radius:8px;font-weight:550}
 #grid-autoclose[aria-pressed="true"]{background:var(--done-bg);box-shadow:var(--press)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Listening pill, waiting badge, shortcuts help, no-watcher banner and chat
+   search: functional, existing tokens only. */
+.listen-pill{margin:0;font-size:.78rem;font-weight:600;padding:2px 10px;border-radius:999px;color:var(--run);background:var(--run-bg)}
+.listen-pill[data-state="off"]{color:var(--needs);background:var(--needs-bg)}
+.waiting-badge{font-size:.78rem;padding:2px 10px;border-radius:999px;color:var(--needs);background:var(--needs-bg)}
+.keys-btn{color:var(--muted);background:var(--card);border:1px solid var(--line);font-size:.8rem;padding:2px 9px}
+.keys-help{position:fixed;z-index:7;top:56px;right:16px;width:300px;padding:12px 14px;font-size:.85rem;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--raise-hi)}
+.keys-help h2{font-size:.9rem;margin:0 0 8px}
+.keys-help ul{gap:6px}
+.keys-help kbd{font-family:var(--mono);font-size:.78rem;padding:0 5px;border:1px solid var(--line);border-radius:4px;background:var(--done-bg)}
+.keys-close{margin-top:10px;color:var(--accent);border:1px solid var(--line);padding:3px 11px}
+.nowatch-banner{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;padding:5px 10px;font-size:.8rem;
+  color:var(--needs);background:var(--needs-bg);border-radius:6px}
+.dline[data-stage="posted"]{color:var(--needs)}
+.chat-search{flex:none;display:flex;align-items:center;gap:8px}
+.chat-search input{flex:1;min-width:0;font:inherit;font-size:.85rem;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+.chat-search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.chat-search-count{flex:none;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
 </style>
 <main id="main" data-view="runs">
 <nav id="view-nav" aria-label="View">
@@ -398,6 +418,8 @@ dl{gap:3px 16px}
 <p id="grid-coord-note" hidden></p><button type="button" id="grid-coord-forget" hidden>Forget</button>
 <p id="grid-count"></p>
 <p id="grid-conn"></p>
+<p id="grid-listen" class="listen-pill" role="status" hidden></p>
+<button type="button" id="grid-waiting" class="waiting-badge" hidden></button>
 <p id="grid-hidden" hidden></p>
 <details id="grid-tray" hidden>
 <summary id="grid-tray-sum">Hidden (0)</summary>
@@ -409,10 +431,21 @@ dl{gap:3px 16px}
 <button type="button" id="grid-close-idle" disabled>Close idle agents</button>
 <button type="button" id="grid-autoclose" aria-pressed="false">Auto-close idle agents</button>
 <button type="button" id="grid-reset">Reset layout</button>
+<button type="button" id="grid-keys-btn" class="keys-btn" aria-expanded="false" aria-controls="grid-keys" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
+</div>
+<div id="grid-keys" class="keys-help" role="dialog" aria-labelledby="grid-keys-title" tabindex="-1" hidden>
+<h2 id="grid-keys-title">Keyboard shortcuts</h2>
+<ul>
+<li><kbd>/</kbd> Type to the coordinator (the maximized one, else the first shown)</li>
+<li><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> Maximize the Nth window</li>
+<li><kbd>Esc</kbd> Close this help, clear a quote, close a search, or restore a maximized window</li>
+<li><kbd>?</kbd> Show or hide this help</li>
+</ul>
+<button type="button" id="grid-keys-close" class="keys-close">Close</button>
 </div>
 <div id="coords" aria-label="Windows"></div>
 <p id="grid-live" class="sr" aria-live="polite"></p>
-<footer id="grid-foot">Only the master writes the windows. The chat box sends your message to the coordinator as a comment sent to Claude; its replies show above the box. Maximize a window to focus on it (Esc or Restore goes back); hide one with – and bring it back from Hidden. Drag a window by its handle (or press Enter on it, then the arrow keys) to move it, and its corner (or Shift+arrows) to resize it; the layout stays on this device.</footer>
+<footer id="grid-foot">Only the master writes the windows. The chat box sends your message to the coordinator as a comment sent to Claude; its replies show above the box. Maximize a window to focus on it (Esc or Restore goes back); hide one with – and bring it back from Hidden. Drag a window by its handle (or press Enter on it, then the arrow keys) to move it, and its corner (or Shift+arrows) to resize it; the layout stays on this device. Press ? for keyboard shortcuts.</footer>
 </section>
 </main>
 <script>
@@ -759,13 +792,19 @@ dl{gap:3px 16px}
     if (view === "grid") agentsLive.start(db);
     // Re-render from the cached rows so "silent" stays current. Never writes;
     // on Grid it also re-checks, at most once a minute, whether the chat box
-    // can send (that check posts nothing).
+    // can send and a session is listening (that check posts nothing).
     setInterval(() => { renderView(); if (view === "grid") checkSend(false); }, 60e3);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) return;
       renderView();
       if (view === "grid") checkSend(true);
     });
+    // Coming back to the window re-checks too, at most every FOCUS_CHECK_MS.
+    try {
+      window.addEventListener("focus", () => {
+        if (view === "grid" && Date.now() - lastCheck >= FOCUS_CHECK_MS) checkSend(true);
+      });
+    } catch (_) { /* no window events */ }
   }
 
   function renderView() {
@@ -835,7 +874,13 @@ dl{gap:3px 16px}
   const MD_DEPTH = 6;       // list nesting
   const MD_QUOTE_DEPTH = 4;
   const MD_COLS = 20;
-  const NO_LISTENER = "Coordinator isn't listening (no watching session); use Open session";
+  // canSendToClaude() is artifact-wide: "no_session" means no Claude session
+  // at all is watching this dashboard, not just this window's coordinator.
+  const NO_WATCHER = "No coordinator is watching this dashboard right now, so messages won't wake it. Open its session and ask it to watch the dashboard.";
+  const POSTED = "Posted as a plain comment: no coordinator was watching, so it didn't wake one. A session that watches the dashboard later can read it.";
+  const FOCUS_CHECK_MS = 10e3;      // a window focus re-checks the listener at most this often
+  const WAIT_QUEUED_MS = 5 * 60e3;  // a queued message counts as waiting after this long
+  const SEARCH_MAX = 200;           // characters of a chat search
   const SEND_OFF = "Sending from this page is off here. Use Open session.";
   const SEND_COPY = {
     consent_required: "Not sent. Allow commenting when claude.ai asks, then press Send.",
@@ -878,6 +923,11 @@ dl{gap:3px 16px}
   const $gridTrayList = document.getElementById("grid-tray-list");
   const $gridShowAll = document.getElementById("grid-showall");
   const $gridLive = document.getElementById("grid-live");
+  const $gridListen = document.getElementById("grid-listen");
+  const $gridWaiting = document.getElementById("grid-waiting");
+  const $keys = document.getElementById("grid-keys");
+  const $keysBtn = document.getElementById("grid-keys-btn");
+  const $keysClose = document.getElementById("grid-keys-close");
 
   function setGridConn(msg, bad) {
     $gridConn.textContent = msg;
@@ -1412,18 +1462,22 @@ dl{gap:3px 16px}
       head: el("div", "tile-head"), grip: el("button", "grip", "⠿"), chip: el("span", "chip"), titleBox: el("div", "title"),
       kicker: el("p", "kicker"), h2: el("h2"), badge: el("span", "badge"), round: el("span", "round"),
       qchip: el("span", "qchip", "question"), acts: el("div", "wacts"), open: link("Open session", SESSION_PREFIX),
-      prBox: el("span", "wacts"), prKey: "", hide: el("button", "hide", "–"), max: el("button", "max", "⤢"), restore: el("button", "max restore", "⤡"),
+      prBox: el("span", "wacts"), prKey: "", find: coord ? el("button", "max chat-search-btn", "🔍") : null, hide: el("button", "hide", "–"), max: el("button", "max", "⤢"), restore: el("button", "max restore", "⤡"),
       body: el("div", "tile-body"), resize: el("button", "resize", "◢"), title: ""};
     t.el.id = coord ? id : "agent-" + safeId(id);
     if (coord) t.el.dataset.role = "coordinator";
     for (const b of [t.grip, t.hide, t.max, t.restore, t.resize]) b.type = "button";
+    if (t.find) {
+      t.find.type = "button";
+      t.find.setAttribute("aria-expanded", "false");
+    }
     t.grip.setAttribute("aria-pressed", "false");
     t.max.setAttribute("aria-pressed", "false");
     t.chip.setAttribute("aria-hidden", "true");
     t.qchip.hidden = true;
     t.restore.hidden = true;
     t.titleBox.append(t.kicker, t.h2);
-    t.acts.append(t.open, t.prBox, t.hide, t.max, t.restore);
+    t.acts.append(...[t.open, t.prBox, t.find, t.hide, t.max, t.restore].filter(Boolean));
     t.head.append(t.grip, t.chip, t.titleBox, t.badge, t.round, t.qchip, t.acts);
     t.el.append(t.head, t.body, t.resize);
     t.grip.addEventListener("pointerdown", (e) => dragStart(t, e));
@@ -1506,7 +1560,38 @@ dl{gap:3px 16px}
       pdot.setAttribute("aria-hidden", "true");
       t.presText = el("span", "ptext");
       t.pres.append(pdot, t.presText);
-      t.chat.append(t.chatNote, t.logWrap, t.work, t.pres, t.quoteBox, t.attBox, t.form, t.sendHint);
+      // No Claude session is watching: a banner over the box (sending still posts).
+      t.banner = el("div", "nowatch-banner");
+      t.banner.setAttribute("role", "note");
+      t.bannerOpen = link("Open session", SESSION_PREFIX);
+      t.banner.append(el("span", "nowatch-text", NO_WATCHER), t.bannerOpen);
+      t.banner.hidden = true;
+      t.bannerOpen.hidden = true;
+      // Search: filters this transcript to the messages containing the text.
+      t.searchBox = el("div", "chat-search");
+      t.searchBox.setAttribute("role", "search");
+      t.searchBox.hidden = true;
+      t.searchIn = el("input", "chat-search-input");
+      t.searchIn.type = "search";
+      t.searchIn.maxLength = SEARCH_MAX;
+      t.searchIn.placeholder = "Find in this conversation";
+      t.searchIn.setAttribute("aria-label", "Find in this conversation");
+      t.searchCount = el("span", "chat-search-count");
+      t.searchCount.setAttribute("aria-live", "polite");
+      t.searchBox.append(t.searchIn, t.searchCount);
+      t.searchRecs = [];
+      t.searchTop = 0;
+      t.searchStick = false;
+      t.searchNew = false;
+      t.waiting = [];
+      t.find.addEventListener("click", () => setSearch(t, t.searchBox.hidden));
+      t.searchIn.addEventListener("input", () => applySearch(t));
+      t.searchIn.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        if (e.preventDefault) e.preventDefault();  // handled: it doesn't also restore a maximized window
+        setSearch(t, false);
+      });
+      t.chat.append(t.chatNote, t.searchBox, t.logWrap, t.work, t.pres, t.banner, t.quoteBox, t.attBox, t.form, t.sendHint);
       t.body.append(t.runLine, t.dyn, t.chat);
       t.bubbles = Object.create(null);
       t.openActs = Object.create(null);
@@ -1587,6 +1672,10 @@ dl{gap:3px 16px}
     t.restore.setAttribute("aria-label", `Restore ${h.title}`);
     t.restore.setAttribute("aria-pressed", "true");
     t.restore.title = "Restore (Esc)";
+    if (t.find) {
+      t.find.setAttribute("aria-label", `Search the conversation in ${h.title}`);
+      t.find.title = "Search this conversation (Esc closes)";
+    }
   }
 
   function fillCoord(t, p, now, hue) {
@@ -1661,6 +1750,7 @@ dl{gap:3px 16px}
     $autoClose.setAttribute("aria-pressed", String(autoClose));
     $filterActive.setAttribute("aria-pressed", String(filter === "active"));
     $filterAll.setAttribute("aria-pressed", String(filter === "all"));
+    fillListen();
     if (rows === null) {
       endPointer();
       maximized = null;
@@ -1674,6 +1764,7 @@ dl{gap:3px 16px}
       $gridCount.textContent = "";
       $gridTray.hidden = true;
       $closeIdle.disabled = true;
+      fillWaiting([]);
       return;
     }
     if (layout === null) layout = loadLayout();
@@ -1749,6 +1840,7 @@ dl{gap:3px 16px}
     }
     syncChats(g.panels);
     fillTray();
+    fillWaiting(tiles);
 
     knownTiles = [...workTiles, ...hiddenTiles].map((t) => t.id);
     knownAll = agents === null ? null
@@ -1796,10 +1888,79 @@ dl{gap:3px 16px}
     }
   }
 
+  // ---- keyboard shortcuts (Grid only) ----
+  // Esc: close the help, else restore a maximized window (a quote or a
+  // search handles its own Esc first). While typing in a field only Esc
+  // counts. "/" goes to a chat box, Alt+1..9 maximizes the Nth window shown
+  // and "?" toggles the help.
+  function typing(e) {
+    const tg = e.target;
+    const tag = tg && typeof tg.tagName === "string" ? tg.tagName.toUpperCase() : "";
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!(tg && tg.isContentEditable === true);
+  }
   function onDocKey(e) {
-    if (!e || e.key !== "Escape" || maximized === null || view !== "grid" || e.defaultPrevented) return;
-    if (e.preventDefault) e.preventDefault();
-    setMax(null);
+    if (!e || view !== "grid" || e.defaultPrevented) return;
+    const stop = () => { if (e.preventDefault) e.preventDefault(); };
+    if (e.key === "Escape") {
+      // An open search in the window that has focus closes first.
+      const at = tileOf(e.target) || tileOf(document.activeElement);
+      if (at && at.searchBox && !at.searchBox.hidden) { stop(); setSearch(at, false); return; }
+      if (!$keys.hidden) { stop(); showKeys(false); return; }
+      if (maximized === null) return;
+      stop();
+      setMax(null);
+      return;
+    }
+    if (typing(e) || e.ctrlKey || e.metaKey) return;
+    if (e.altKey) {
+      // e.code: on a Mac, Alt+digit types a symbol into e.key.
+      const m = /^Digit([1-9])$/.exec(typeof e.code === "string" ? e.code : "") || /^([1-9])$/.exec(String(e.key));
+      const t = m ? workTiles[Number(m[1]) - 1] : null;
+      if (!t) return;
+      stop();
+      if (maximized !== t.key) setMax(t); else focusEl(t.restore);
+      return;
+    }
+    if (e.key === "/") {
+      const t = chatTarget();
+      if (!t) return;
+      stop();
+      focusEl(t.input);
+    } else if (e.key === "?") {
+      stop();
+      showKeys($keys.hidden);
+    }
+  }
+  // The window an element is in (null: none).
+  function tileOf(node) {
+    const els = [...workTiles, ...hiddenTiles];
+    let n = node;
+    for (let i = 0; n && i < 60; i += 1) {
+      const t = els.find((x) => x.el === n);
+      if (t) return t;
+      n = n.parentNode;
+    }
+    return null;
+  }
+  // The maximized coordinator window's box, else the first coordinator window shown.
+  function chatTarget() {
+    const top = maximized === null ? null : tileEls[maximized] || null;
+    const list = top ? [top] : workTiles;
+    return list.find((t) => t.coord && !t.chat.hidden && !t.form.hidden) || null;
+  }
+  let keysBack = null;      // what had focus before the help opened
+  function showKeys(open) {
+    if (open === !$keys.hidden) return;
+    $keys.hidden = !open;
+    $keysBtn.setAttribute("aria-expanded", String(open));
+    if (open) {
+      keysBack = document.activeElement || null;
+      focusEl($keys);
+    } else {
+      const back = keysBack;
+      keysBack = null;
+      focusEl(back && back !== document.body ? back : $keysBtn);
+    }
   }
 
   // ---- moving and resizing windows ----
@@ -2049,7 +2210,8 @@ dl{gap:3px 16px}
     })();
   }
 
-  // Whether the box can send right now. Posts nothing, never prompts.
+  // Whether the box can send right now. Posts nothing, never prompts. The
+  // one check behind the box, the toolbar's listening pill and the banner.
   function checkSend(force) {
     if (!comments || sendOff || checking) return;
     const now = Date.now();
@@ -2063,6 +2225,94 @@ dl{gap:3px 16px}
       sendState = v === "available" || v === "no_session" ? v : "hidden";
       if (view === "grid") renderGrid();
     })();
+  }
+
+  // The toolbar pill: any Claude session watching this artifact (not per
+  // coordinator). Hidden when the page can't tell (no comments, off, other answers).
+  function fillListen() {
+    const on = !!comments && !sendOff && sendState === "available";
+    const off = !!comments && !sendOff && sendState === "no_session";
+    $gridListen.hidden = !on && !off;
+    if (!on && !off) { delete $gridListen.dataset.state; return; }
+    $gridListen.dataset.state = on ? "on" : "off";
+    setText($gridListen, on ? "Claude listening" : "No Claude session listening");
+    $gridListen.title = on ? "A Claude session is watching this dashboard (any session, not per coordinator)"
+      : "No Claude session is watching this dashboard: messages post but wake no one";
+  }
+
+  // ---- unanswered: Kyle's messages from this visit with no Seen or reply ----
+  let waitOldest = null;    // {t, at, nonce} of the oldest waiting message
+  function fillWaiting(tiles) {
+    let n = 0;
+    let oldest = null;
+    for (const t of tiles) {
+      if (!t.coord || !t.waiting) continue;
+      for (const w of t.waiting) {
+        n += 1;
+        if (!oldest || w.at < oldest.at) oldest = {t, at: w.at, nonce: w.nonce};
+      }
+    }
+    waitOldest = oldest;
+    $gridWaiting.hidden = !n;
+    setText($gridWaiting, `${n} waiting`);
+    $gridWaiting.setAttribute("aria-label", `${n} message${n === 1 ? "" : "s"} with no reply yet; go to the oldest`);
+  }
+  function reveal(e) {
+    try { if (e && typeof e.scrollIntoView === "function") e.scrollIntoView({block: "nearest"}); } catch (_) { /* no layout */ }
+  }
+  // The badge's click: the oldest waiting message's window, scrolled to it.
+  function goWaiting() {
+    const w = waitOldest;
+    if (!w) return;
+    const t = w.t;
+    if (isHidden(t.id)) setHidden(t, false);
+    else if (maximized !== null && maximized !== t.key) setMax(null);
+    if (!t.searchBox.hidden) setSearch(t, false);
+    reveal(t.el);
+    const b = t.bubbles["l " + w.nonce];
+    if (b) reveal(b.el);
+    focusEl(t.form.hidden ? t.max : t.input);
+    announce(`Oldest message waiting: ${t.title}.`);
+  }
+
+  // ---- chat search: filters one transcript, text only ----
+  // keepFocus: closed by a send, so focus stays in the box.
+  function setSearch(t, open, keepFocus) {
+    if (open === !t.searchBox.hidden) { if (open) focusEl(t.searchIn); return; }
+    t.searchBox.hidden = !open;
+    t.find.setAttribute("aria-expanded", String(open));
+    if (open) {
+      t.searchStick = nearBottom(t.log);
+      t.searchTop = t.log.scrollTop;
+      t.searchNew = false;
+    } else {
+      t.searchIn.value = "";
+    }
+    applySearch(t);
+    if (open) { focusEl(t.searchIn); return; }
+    // Back where it was; messages that arrived meanwhile get the pill.
+    if (t.searchStick) { scrollEnd(t.log); t.pill.hidden = true; }
+    else {
+      t.log.scrollTop = t.searchTop;
+      if (t.searchNew && !nearBottom(t.log)) t.pill.hidden = false;
+    }
+    t.searchNew = false;
+    if (!keepFocus) focusEl(t.find);
+  }
+  // Messages whose text contains the query (case-insensitive) stay; the rest,
+  // activity rows and the delivery line hide while a query is typed.
+  function applySearch(t) {
+    const q = t.searchBox.hidden ? "" : String(t.searchIn.value || "").trim().toLowerCase();
+    let n = 0;
+    let m = 0;
+    for (const r of t.searchRecs) {
+      if (r.text === null) { r.el.hidden = !!q; continue; }
+      m += 1;
+      const hit = !q || r.text.toLowerCase().includes(q);
+      if (hit) n += 1;
+      r.el.hidden = !hit;
+    }
+    setText(t.searchCount, `${n} of ${m}`);
   }
 
   // ---- the subscriptions: coordinator windows on screen, newest first
@@ -2135,12 +2385,20 @@ dl{gap:3px 16px}
 
   function fillChat(t, p) {
     t.chat.hidden = !p.session;
+    t.waiting = [];
     if (!p.session) return;
     const key = p.session;
     const chat = chats[key];
     // The box.
-    const show = !!comments && !sendOff && sendState === "available";
+    // no_session still shows the box (the message posts as a plain comment),
+    // under a banner saying no coordinator is watching.
+    const show = !!comments && !sendOff && (sendState === "available" || sendState === "no_session");
     t.form.hidden = !show;
+    t.banner.hidden = !show || sendState !== "no_session";
+    t.bannerOpen.hidden = t.banner.hidden;
+    if (t.bannerOpen.href !== p.session) t.bannerOpen.href = p.session;
+    t.send.title = sendState === "no_session" ? "Post as a comment (no coordinator is watching; Enter)"
+      : "Send (Enter; Shift+Enter for a new line)";
     t.send.disabled = sending;
     fillQuote(t);
     t.input.placeholder = assets ? "Reply to the coordinator… (paste or drop files)" : "Reply to the coordinator…";
@@ -2148,7 +2406,7 @@ dl{gap:3px 16px}
     let hint = t.hintText;
     let bad = t.hintBad;
     if (sendOff) { hint = SEND_OFF; bad = false; }
-    else if (!show) { hint = comments && sendState === "no_session" ? NO_LISTENER : ""; bad = false; }
+    else if (!show) { hint = ""; bad = false; }
     setText(t.sendHint, hint);
     t.sendHint.hidden = !hint;
     if (bad) t.sendHint.dataset.level = "bad"; else delete t.sendHint.dataset.level;
@@ -2191,6 +2449,7 @@ dl{gap:3px 16px}
     t.qchip.hidden = !open;
     const next = Object.create(null);
     const list = [];
+    const recs = [];  // for search: each element with its message text (null: not a message)
     for (let i = 0; i < items.length; i += 1) {
       const m = items[i];
       if (m.kind === "activity" && m.from === "coordinator") {
@@ -2204,6 +2463,7 @@ dl{gap:3px 16px}
         if (!b || b.sig !== sig) b = {sig, el: activityGroup(t, gkey, run)};
         next[gkey] = b;
         list.push(b.el);
+        recs.push({el: b.el, text: null});
         i = j;
         continue;
       }
@@ -2213,6 +2473,7 @@ dl{gap:3px 16px}
       if (!b || b.sig !== sig) b = {sig, el: bubble(m, kind)};
       next[m.key] = b;
       list.push(b.el);
+      recs.push({el: b.el, text: m.text});
     }
     t.bubbles = next;
     // Under Kyle's latest message from this page: how far it got.
@@ -2221,21 +2482,36 @@ dl{gap:3px 16px}
     if (line) {
       const target = next["l " + last.nonce]
         || next[(items.find((m) => m.from === "kyle" && m.ref === last.nonce && m.key[0] === "d") || {}).key];
-      if (target) list.splice(list.indexOf(target.el) + 1, 0, t.dline);
+      if (target) { list.splice(list.indexOf(target.el) + 1, 0, t.dline); recs.push({el: t.dline, text: null}); }
       showLine(t, line, p.session);
     }
     t.lineShown = !!line;
+    // Waiting: each of Kyle's messages from this visit still at Delivered,
+    // not picked up, posted with no watcher, or queued over WAIT_QUEUED_MS.
+    const nowW = Date.now();
+    for (const m of pendingBy[key] || []) {
+      const ln = m === last ? line : deliveryLine(m, chat, items, p.session);
+      const sent = m.sentAt || m.at;
+      if (ln && (["delivered", "late", "posted"].includes(ln.stage) || (ln.stage === "queued" && nowW - sent > WAIT_QUEUED_MS))) {
+        t.waiting.push({at: sent, nonce: m.nonce});
+      }
+    }
     if (!list.length) list.push(t.logEmpty);
+    // While searching the log never follows new messages (the filtered
+    // list may fit); closing the search shows the pill for them instead.
+    const searching = !t.searchBox.hidden;
     if (!sameChildren(t.log, list)) {
-      const stick = t.stick || !t.logSeen || nearBottom(t.log);
+      const stick = !searching && (t.stick || !t.logSeen || nearBottom(t.log));
       const before = t.log.children.length ? t.log.children[t.log.children.length - 1] : null;
       t.log.replaceChildren(...list);
       if (stick) { scrollEnd(t.log); t.pill.hidden = true; }
-      else if (list[list.length - 1] !== before) t.pill.hidden = false;
-    } else if (t.stick) {
+      else if (list[list.length - 1] !== before) { if (searching) t.searchNew = true; else t.pill.hidden = false; }
+    } else if (t.stick && !searching) {
       scrollEnd(t.log);
       t.pill.hidden = true;
     }
+    t.searchRecs = recs;
+    applySearch(t);
     t.logSeen = t.logSeen || !!(chat && chat.docs);
     t.stick = false;
     fillWork(t, key, chat);
@@ -2312,6 +2588,7 @@ dl{gap:3px 16px}
     }
     if (seen !== null) return {stage: "seen", text: "Seen by coordinator", time: stamp(seen)};
     // Not seen while the coordinator is in a task: queued, not lost.
+    if (m.plain) return {stage: "posted", text: POSTED, open: !!session};
     if (presence(chat, now).state === "task") return {stage: "queued", text: QUEUED, spin: true};
     if (now - sent > PICKUP_MS) return {stage: "late", text: NOT_PICKED, open: !!session};
     return {stage: "delivered", text: "Delivered"};
@@ -2618,10 +2895,15 @@ dl{gap:3px 16px}
     return s;
   }
 
-  // Only the Send button's click and the box's Enter call this.
+  // Only the Send button's click and the box's Enter call this. With a
+  // watching session it is sendToClaude; with none ("no_session", read at
+  // the press) it posts the same text as a plain comment (create, or reply
+  // in this visit's thread), which wakes no one but a session can read later.
   async function sendChat(t) {
     const p = t.panel;
-    if (!p || !p.session || !comments || sendOff || sending || sendState !== "available") return;
+    if (!p || !p.session || !comments || sendOff || sending) return;
+    if (sendState !== "available" && sendState !== "no_session") return;
+    const plain = sendState === "no_session";
     const draft = t.input.value;
     const quote = t.quote;
     const said = cleanSend(draft);
@@ -2653,12 +2935,14 @@ dl{gap:3px 16px}
     const mine = pendingBy[key] || (pendingBy[key] = []);
     const known = Object.create(null);  // mirror docs already here: none of them answers this message
     for (const d of (chats[key] && chats[key].docs) || []) known["d " + String(d._id)] = true;
-    const msg = {nonce, text: head.slice(prefix.length), at: Date.now(), state: "sending", known,
+    const msg = {nonce, text: head.slice(prefix.length), at: Date.now(), state: "sending", known, plain,
       atts: atts.map((a) => ({name: a.name, type: a.type, size: a.size, url: a.url, id: a.id, state: "ready"}))};
     mine.push(msg);
     if (mine.length > PENDING_MAX) mine.splice(0, mine.length - PENDING_MAX);
     t.hintText = "";
     t.hintBad = false;
+    // A typed search would hide this message and its delivery line.
+    if (!t.searchBox.hidden) setSearch(t, false, true);
     t.stick = true;
     // Clear the box at once: the bubble shows "Sending…" while claude.ai
     // confirms; a failed send puts the draft back.
@@ -2670,8 +2954,13 @@ dl{gap:3px 16px}
     let hint = "";
     let bad = false;
     try {
-      const target = thread ? {threadId: thread, text: textOut} : {anchor: await anchorP, text: textOut};
-      const res = await comments.sendToClaude(target);
+      let res = null;
+      if (plain) {
+        res = thread ? await comments.reply(thread, textOut) : await comments.create({anchor: await anchorP, text: textOut});
+      } else {
+        const target = thread ? {threadId: thread, text: textOut} : {anchor: await anchorP, text: textOut};
+        res = await comments.sendToClaude(target);
+      }
       if (res && typeof res.threadId === "string" && res.threadId) threads[key] = res.threadId;
       msg.state = "sent";
       msg.sentAt = Date.now();
@@ -2999,6 +3288,8 @@ dl{gap:3px 16px}
     } else {
       agentsLive.pause();
       syncChats([]);
+      $keys.hidden = true;
+      $keysBtn.setAttribute("aria-expanded", "false");
       render();
     }
   }
@@ -3024,6 +3315,9 @@ dl{gap:3px 16px}
   $coordPick.addEventListener("change", () => setCoord($coordPick.value));
   $coordForget.addEventListener("click", () => setCoord(""));
   document.addEventListener("keydown", onDocKey);
+  $gridWaiting.addEventListener("click", goWaiting);
+  $keysBtn.addEventListener("click", () => showKeys($keys.hidden));
+  $keysClose.addEventListener("click", () => showKeys(false));
   document.addEventListener("selectionchange", onSelection);
   try { window.addEventListener("resize", () => { if (view === "grid") renderGrid(); }); } catch (_) { /* no window events */ }
 
