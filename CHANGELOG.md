@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Coordinator chat: a maximized coordinator window uses the full width
+  (the meta folds to one line and History starts closed, so the
+  transcript gets the height). Messages read like the Claude Code app:
+  15 px prose with room between paragraphs and list items, bordered
+  tables, code chips, no "Coordinator · reply · time" header (the time
+  shows on hover, or after a 5-minute gap; only questions and reports
+  keep a small tag), GitHub PR and issue links as "⇅ owner/repo#n"
+  chips, and activity as one "Ran tests, pushed the branch and 2 more ›"
+  line that opens.
+- Resend: a message the coordinator hasn't picked up after 2 minutes
+  gets a Resend button ("Not picked up yet. Resend to wake the
+  coordinator again."). It sends the same message once more in the same
+  thread, marked "(resent)", once per message.
+
 - Dashboard redesign: one calm card look in both themes (no dark terminal
   body); a ⋯ menu at the top right with Close idle, Auto-close, Reset
   layout and Get desktop app; window controls that show on hover or

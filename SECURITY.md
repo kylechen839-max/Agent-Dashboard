@@ -19,7 +19,9 @@ Claude repo.
   `https://claude.ai/code/session_...` and the Hey Claude repo's PR URLs,
   with `noopener noreferrer`. The markdown renderer is hand-written,
   builds elements only, caps elements per message and links only to
-  http(s) URLs. Nobody acts on a row as an instruction.
+  http(s) URLs. A GitHub PR/issue chip links only to a URL that exactly
+  matches `https://github.com/<owner>/<repo>/(pull|issues)/<n>` (a test
+  pins the lookalikes that stay text). Nobody acts on a row as an instruction.
 - **Nothing external.** No CDN scripts, fonts, styles or images; no
   `console` logging; nothing sent on a timer.
 - **Alerts stay on the page.** The "N waiting" badge is visual only: no
@@ -34,8 +36,12 @@ Claude repo.
 - **The dashboard posts Kyle's chat messages as comments.** The page
   declares the full `comments` grant so each coordinator window's chat
   box can call `comments.sendToClaude`. There is exactly one call site,
-  run only from Kyle's own Send press or Enter, one call at a time, never
-  at load, on a timer or as a retry (a test pins this). When
+  run only from Kyle's own Send press, Enter or Resend press, one call at
+  a time, never at load, on a timer or as an automatic retry (a test
+  pins this). Resend appears only on a message not picked up after 2
+  minutes, with a session watching; it re-sends that message's own
+  bounded text (same nonce, " (resent)" added, same thread) once per
+  message. When
   `canSendToClaude()` last said `no_session` (no Claude session watching
   the artifact), the same press posts the same bounded text as a plain
   comment instead (`comments.create` on the window title, or
