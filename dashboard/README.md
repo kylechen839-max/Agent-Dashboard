@@ -486,7 +486,9 @@ Each coordinator window with a session link has a transcript and a box.
   "sending", then "sent" or "not sent", until its mirrored copy (same
   nonce in `ref`) replaces it. The newest unanswered `question` is amber
   and the window gets a "question" chip. Near the bottom the transcript
-  follows new messages; scrolled up, a "New messages" pill appears. Only
+  follows new messages; scrolled up, a "New messages" pill appears. After a
+  reload each transcript opens at its newest message, and it stays pinned
+  there through resizes (layout, maximize) until Kyle scrolls up. Only
   the newest 8 coordinator windows (a maximized one first) load their
   transcript at a time; none do on Runs. With no user id there is no
   transcript, and the box still works.

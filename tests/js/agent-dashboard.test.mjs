@@ -227,6 +227,7 @@ async function loadPage({ db = fakeDb(), withClaude = true, comments = fakeComme
   for (const id of ['grid-listen', 'grid-waiting', 'grid-keys']) ids[id].hidden = true;
   const timers = [];
   const intervals = [];
+  const resizeObservers = [];
   // The document hears keydown (Esc) and visibilitychange; doc() delivers
   // one to every listener the page added and returns the event.
   const docListeners = {};
@@ -252,7 +253,14 @@ async function loadPage({ db = fakeDb(), withClaude = true, comments = fakeComme
     setInterval: (fn, ms) => { intervals.push({ fn, ms }); return intervals.length; },
     DOMParser: class { parseFromString(html) { return { body: parseTags(html) }; } },
     getSelection: () => sel,
+    // Records what the page observes; resize(el) runs the callbacks
+    // watching el, as a browser does once el is laid out or resized.
+    ResizeObserver: class {
+      constructor(cb) { this.cb = cb; resizeObservers.push(this); this.els = []; }
+      observe(el) { this.els.push(el); }
+    },
   };
+  const resize = (el) => { for (const o of resizeObservers) if (o.els.includes(el)) o.cb([{ target: el }]); };
   // The current text selection (null: none); select() sets it and fires selectionchange.
   let sel = null;
   // The window hears pointermove/up/cancel (a captured pointer's events
@@ -290,7 +298,7 @@ async function loadPage({ db = fakeDb(), withClaude = true, comments = fakeComme
   await new Promise((r) => setImmediate(r));
   const pending = () => timers.filter((t) => !t.cleared);
   const select = (s) => { sel = s; doc('selectionchange'); };
-  return { select, api: sandbox.AgentDashboard, ids, db, comments, assets, uses, userCalls, timers, pending, intervals, win, winListeners,
+  return { resize, select, api: sandbox.AgentDashboard, ids, db, comments, assets, uses, userCalls, timers, pending, intervals, win, winListeners,
     doc, docListeners, setNow, document };
 }
 
@@ -2122,6 +2130,31 @@ test('chat: the newest open question is highlighted until Kyle replies', async (
   chatSnap(page, [mirror('k3', { from: 'kyle', text: 'no', at: iso(NOW + 2 * MIN) }),
     mirror('q3', { kind: 'question', text: 'And release?', at: iso(NOW + MIN) })]);
   assert.equal('question' in c.panel.dataset, false);
+});
+
+test('chat: after a reload it opens at the newest message once laid out, and stays there until Kyle scrolls up', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  // Filled before its window has a size: scrolling then does nothing.
+  chatSnap(page, [mirror('m2', { at: iso(NOW) }), mirror('m1')]);
+  assert.equal(c.log.scrollTop, 0);
+  // The window is laid out: the log gets its size and opens at the end.
+  c.log.scrollHeight = 900;
+  c.log.clientHeight = 300;
+  page.resize(c.log);
+  assert.equal(c.log.scrollTop, 900, 'opens at the newest message');
+  // Kyle scrolls up to read; a later resize leaves him there.
+  c.log.scrollTop = 100;
+  c.log.dispatch('scroll');
+  c.log.clientHeight = 400;
+  page.resize(c.log);
+  assert.equal(c.log.scrollTop, 100, 'left where Kyle is reading');
+  // Back at the bottom by hand, a resize keeps him at the end.
+  c.log.scrollTop = 500;
+  c.log.dispatch('scroll');
+  c.log.scrollHeight = 1100;
+  page.resize(c.log);
+  assert.equal(c.log.scrollTop, 1100);
 });
 
 test('chat: the transcript follows new messages near the bottom, else shows a New messages pill', async () => {
