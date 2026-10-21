@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Design skills: `.claude/skills/` now has three vendored, pinned skills
+  for UI work (Anthropic `frontend-design`, Vercel `web-design-guidelines`
+  with its rules read locally, Addy Osmani `accessibility`), plus
+  `DESIGN_SKILLS.md` with their sources and where this repo's rules win.
 - Dashboard redesign: one calm card look in both themes (no dark terminal
   body); a ⋯ menu at the top right with Close idle, Auto-close, Reset
   layout and Get desktop app; window controls that show on hover or
