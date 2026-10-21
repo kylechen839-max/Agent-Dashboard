@@ -273,6 +273,33 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   picked up or maximized. A window you restore by hand (Hidden menu or
   Show all) stays shown until its state changes: the layout entry keeps
   `k: <state>` for it and drops it on the next change.
+- **Listening pill** (toolbar): "Claude listening" (calm) or "No Claude
+  session listening" (amber), from `comments.canSendToClaude()`. This is
+  artifact-wide: it says whether *any* Claude session is watching this
+  dashboard, not whether a particular coordinator is. It shares the chat
+  box's one check (posts nothing): on each Grid show, on maximize, when
+  the page becomes visible or the window gets focus (at most every 10 s),
+  after `claude_unavailable`, and at most once a minute on the existing
+  re-render tick. Any other answer (`writers_only`, `off`, a rejection, no
+  `comments`) hides the pill.
+- **N waiting** (toolbar badge): your messages sent from this page this
+  visit, across the coordinator windows shown or hidden, that have no
+  Seen or reply yet: delivery stage Delivered, not picked up (amber),
+  Posted with no watcher, or Queued for more than 5 minutes. Click it to
+  go to the oldest one's window (a maximized other window is restored, a
+  hidden one shown again, an open search closed), scrolled to the
+  message, with focus in its box. Messages from earlier visits aren't
+  counted (the page only knows delivery for what it sent).
+  No sound, no Notification API and no title changes (the page runs in
+  claude.ai's iframe, so its `document.title` wouldn't reach the tab).
+- **Keyboard shortcuts** (Grid only; while typing in a field only Esc
+  counts): `/` puts focus in the maximized coordinator window's box, else
+  the first coordinator window shown; Alt+1…9 maximizes the Nth window
+  shown (by key code, so it works on a Mac too); `?` (or the toolbar's
+  ? button) toggles a small shortcuts panel, which Esc or Close shuts,
+  returning focus where it was. Esc keeps its order: a quote in the box,
+  then an open chat search in the window that has focus, then the help
+  panel, then a maximized window.
 - **Moving and resizing.** Drag a window by the handle in
   its title bar, or Tab to the handle, press Enter, then the arrow keys
   (Enter again drops it). Drag the corner handle to resize: 1–3 columns
@@ -324,11 +351,34 @@ Each coordinator window with a session link has a transcript and a box.
   uploaded, listed or deleted at load. With no `assets` grant
   (`use("assets")` is null) there is no attachment UI.
 - **When it shows.** The page asks `canSendToClaude()` (posts nothing)
-  on each Grid show, on maximize, when the page becomes visible again,
-  after `claude_unavailable`, and at most once a minute. `available`
-  shows the box; `no_session` shows "Coordinator isn't listening (no
-  watching session); use Open session"; anything else hides it. Open
-  session is always there as the fallback.
+  on each Grid show, on maximize, when the page becomes visible again or
+  the window gets focus (at most every 10 s), after `claude_unavailable`,
+  and at most once a minute. `available` shows the box; `no_session`
+  shows the box under an amber banner, "No coordinator is watching this
+  dashboard right now, so messages won't wake it. Open its session and
+  ask it to watch the dashboard.", with the window's Open session link;
+  anything else hides it. `no_session` is artifact-wide (no Claude
+  session at all is watching), so every coordinator window shows the
+  banner at once.
+- **Sending with no watcher.** `sendToClaude` would reject
+  `claude_unavailable` and post nothing, so when the last check said
+  `no_session` (read at the press) Send posts the same text as a plain
+  comment instead: `comments.create` on the window's title, or
+  `comments.reply` into this visit's thread. It wakes no one, but a
+  session that starts watching the dashboard later can read it. The
+  delivery line says "Posted as a plain comment: no coordinator was
+  watching…" with Open session. Once a session is watching again, the
+  next Send goes through `sendToClaude` (in the same thread).
+- **Search** (🔍 in a coordinator window's title bar, labelled "Search
+  the conversation in <title>"): opens a field over the transcript that
+  keeps only the messages whose text contains what you type
+  (case-insensitive, plain text matching on the message text, nothing
+  rendered as markup), with "N of M" messages. Activity rows and the
+  delivery line hide while a query is typed; new messages are filtered
+  too. Esc in its window (or the 🔍 toggle) closes it, shows everything
+  again and puts the scroll back; messages that arrived meanwhile get the
+  "New messages" pill rather than moving the view. Sending closes it, so
+  your message and its delivery line show. No highlight.
 - **Errors** (never retried by the page; the error's own text is never
   shown):
 
@@ -372,6 +422,21 @@ Each coordinator window with a session link has a transcript and a box.
   session; the window says "needs you (approval)" and Open session goes
   there). Whether a comment wakes a coordinator mid-turn or only at the
   turn boundary is not verified.
+
+## Manual checks (only a person can do these)
+
+The node tests drive the page with a fake DOM and fake key events; these
+need a real browser on a real keyboard:
+
+- **Alt+1…9 on Windows** (Chrome or Edge, in the launcher's app window
+  and in a normal tab): with Grid shown and focus outside the chat box,
+  Alt+1 and Alt+2 each maximize that window, and the browser doesn't
+  also act on them (open a menu, switch tabs or type a character).
+- **Alt+1…9 on macOS** (Chrome, app window and tab): the same; Option
+  types a symbol on a Mac keyboard, so this checks the page reads the
+  key code, and that no symbol lands anywhere.
+- **`/` and `?`** on both: `/` puts the cursor in a chat box; `?` opens
+  the shortcuts panel and Esc closes it, with focus back where it was.
 
 ## Chat mirror schema (Kyle's private subtree, written only by the master)
 
@@ -470,7 +535,8 @@ start signed out of claude.ai, so neither Runs nor Grid would load.
 - **Only the master writes the dashboard** (`runs` and `agents`).
   Subagents never do, and the watchdog never reads or writes `agents`.
   The page never writes the db. Its one write anywhere is the chat
-  box's comment (Kyle's own press) and the one `assets.delete` for an
+  box's comment (Kyle's own press; `sendToClaude`, or a plain
+  `create`/`reply` when no session is watching) and the one `assets.delete` for an
   attachment he removes before sending, and in the browser's localStorage
   it keeps only its view, window layout, filter, coordinator pick and
   auto-close toggle.

@@ -33,8 +33,9 @@ Never skip or weaken a test to get green.
   `.add(` anywhere in the page (Map and Set included; keep page state in
   arrays or plain objects). The one exception is the single
   `assets.delete` for an attachment Kyle removes before sending. Its only
-  other writes are the chat box's `sendToClaude` comment (Kyle's own
-  press) and its five localStorage keys.
+  other writes are the chat box's comment (Kyle's own press:
+  `sendToClaude`, or a plain `comments.create`/`comments.reply` when no
+  Claude session is watching) and its five localStorage keys.
 - **Rows are untrusted data.** Render with `textContent` and elements
   only (no `innerHTML` and friends); links only to the session and PR
   prefixes, with `noopener noreferrer`.

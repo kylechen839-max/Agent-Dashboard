@@ -121,9 +121,9 @@ function fakeDb() {
 // The full comments namespace. canSendToClaude answers ns.state.can (or the
 // next function queued in canReplies); anchorFor records the element;
 // sendToClaude records each target and answers from sendReplies (default: a
-// new thread t<N>).
+// new thread t<N>); create and reply record their arguments and succeed.
 function fakeComments({ can = 'available' } = {}) {
-  const calls = { can: 0, anchor: [], send: [] };
+  const calls = { can: 0, anchor: [], send: [], create: [], reply: [] };
   const canReplies = [];
   const replies = [];
   const state = { can };
@@ -141,6 +141,15 @@ function fakeComments({ can = 'available' } = {}) {
       calls.send.push(target);
       const next = replies.shift();
       return next ? next(target) : Promise.resolve({ threadId: `t${calls.send.length}`, commentId: `c${calls.send.length}` });
+    },
+    // The plain write verbs (used only when no Claude session is watching).
+    create(opts) {
+      calls.create.push(opts);
+      return Promise.resolve({ threadId: `p${calls.create.length}`, commentId: `pc${calls.create.length}` });
+    },
+    reply(threadId, text) {
+      calls.reply.push([threadId, text]);
+      return Promise.resolve({ commentId: `pr${calls.reply.length}` });
     },
   };
   return { ns, calls, replies, canReplies, state };
@@ -189,6 +198,7 @@ const PAGE_IDS = {
   'grid-showall': 'button', 'grid-coord': 'select', 'grid-coord-note': 'p', 'grid-coord-forget': 'button', getapp: 'div', 'getapp-btn': 'button', 'getapp-menu': 'div', 'getapp-hint': 'p',
   'getapp-dash-win': 'button', 'getapp-dash-mac': 'button',
   'grid-close-idle': 'button', 'grid-autoclose': 'button',
+  'grid-listen': 'p', 'grid-waiting': 'button', 'grid-keys': 'div', 'grid-keys-btn': 'button', 'grid-keys-close': 'button',
 };
 
 function memStorage(initial = {}) {
@@ -213,6 +223,7 @@ async function loadPage({ db = fakeDb(), withClaude = true, comments = fakeComme
   ids['grid-filter-all'].setAttribute('aria-pressed', 'false');
   ids['grid-coord-note'].hidden = true;
   ids['grid-coord-forget'].hidden = true;
+  for (const id of ['grid-listen', 'grid-waiting', 'grid-keys']) ids[id].hidden = true;
   const timers = [];
   const intervals = [];
   // The document hears keydown (Esc) and visibilitychange; doc() delivers
@@ -540,7 +551,7 @@ const TAIL = '01KA1RGMx3zUcsTDp3cT5KUt';
 const CHAT = `data/users/u_test/chat-${TAIL}/msgs`;
 const PR = 'https://github.com/kylechen839-max/Claude-Personal-Assistant/pull/';
 const RUN = '20261019-183000-voice-speed';
-const NO_LISTENER = "Coordinator isn't listening (no watching session); use Open session";
+const NO_WATCHER = "No coordinator is watching this dashboard right now, so messages won't wake it. Open its session and ask it to watch the dashboard.";
 const SEND_OFF = 'Sending from this page is off here. Use Open session.';
 
 async function gridPage(opts = {}) {
@@ -1693,6 +1704,7 @@ const chatOf = (page, i = 0) => {
     log: byClass(panel, 'log')[0],
     pill: byClass(panel, 'newpill')[0],
     title: panel.find((e) => e.tagName === 'H2')[0],
+    banner: byClass(panel, 'nowatch-banner')[0],
   };
 };
 const bubbles = (page, i = 0) => byClass(chatOf(page, i).log, 'msg');
@@ -1704,21 +1716,22 @@ const type = (c, value) => { c.input.value = value; };
 const enter = (c, extra = {}) => c.input.dispatch('keydown', { key: 'Enter', ...extra });
 const sentText = (page, i = -1) => page.comments.calls.send.at(i).text;
 
-test('chat: the box shows only when canSendToClaude says available; other answers hide it', async () => {
+test('chat: the box shows when canSendToClaude says available or no_session (with the banner); other answers hide it', async () => {
   const cases = [
-    ['available', false, ''],
-    ['no_session', true, NO_LISTENER],
-    ['writers_only', true, ''],
-    ['off', true, ''],
-    ['something_new', true, ''],
+    ['available', false, false],
+    ['no_session', false, true],
+    ['writers_only', true, false],
+    ['off', true, false],
+    ['something_new', true, false],
   ];
-  for (const [can, hidden, hint] of cases) {
+  for (const [can, hidden, banner] of cases) {
     const comments = fakeComments({ can });
     const page = await chatPage({ comments });
     const c = chatOf(page);
     assert.equal(c.form.hidden, hidden, can);
-    assert.equal(c.hint.textContent, hint, can);
-    assert.equal(c.hint.hidden, !hint, can);
+    assert.equal(c.banner.hidden, !banner, can);
+    assert.equal(c.hint.textContent, '', can);
+    assert.equal(c.hint.hidden, true, can);
     assert.equal(page.comments.calls.send.length, 0);
   }
   const rejecting = fakeComments();
@@ -1737,7 +1750,7 @@ test('chat: canSendToClaude is re-checked on Grid show, maximize, visibility and
   const page = await chatPage({ comments });
   const c = chatOf(page);
   assert.equal(comments.calls.can, 1);
-  assert.equal(c.form.hidden, true);
+  assert.equal(c.banner.hidden, false);
   comments.state.can = 'available';
   page.intervals[0].fn();
   await settle();
@@ -1746,7 +1759,7 @@ test('chat: canSendToClaude is re-checked on Grid show, maximize, visibility and
   page.intervals[0].fn();
   await settle();
   assert.equal(comments.calls.can, 2);
-  assert.equal(c.form.hidden, false, 'a session started watching');
+  assert.equal(c.banner.hidden, true, 'a session started watching');
   page.doc('visibilitychange');
   await settle();
   assert.equal(comments.calls.can, 3);
@@ -2000,8 +2013,9 @@ test('chat error claude_unavailable: nothing was posted, and the box is re-check
   c.send.click();
   await settle();
   assert.equal(page.comments.calls.can, 2, 're-checked right away');
-  assert.equal(c.form.hidden, true);
-  assert.equal(c.hint.textContent, NO_LISTENER);
+  assert.equal(c.form.hidden, false, 'the box stays: the next press posts a plain comment');
+  assert.equal(c.banner.hidden, false);
+  assert.equal(c.hint.textContent, "Not sent: the coordinator can't receive it right now.");
   assert.equal(c.input.value, 'hi', 'the draft is kept');
 });
 
@@ -3310,4 +3324,419 @@ test('get desktop app: a declined save is quiet; other rejections get a calm lin
   await settle();
   assert.equal(page.ids.getapp.hidden, true);
   assert.equal(downloads.calls.save.length, 4, 'never retried by itself');
+});
+
+
+// ==== listening indicator, unanswered tracker, shortcuts and chat search ====
+
+const SESSION2 = 'https://claude.ai/code/session_02OtherCoordinator';
+const CHAT2 = 'data/users/u_test/chat-02OtherCoordinator/msgs';
+const listen = (page) => [page.ids['grid-listen'].hidden, page.ids['grid-listen'].textContent, page.ids['grid-listen'].dataset.state];
+const waiting = (page) => [page.ids['grid-waiting'].hidden, page.ids['grid-waiting'].textContent];
+const sendIn = async (c, text) => { type(c, text); c.send.click(); await settle(); };
+
+test('listening pill: Claude listening, or amber No Claude session listening; hidden when the page cannot tell', async () => {
+  const on = await chatPage({ comments: fakeComments({ can: 'available' }) });
+  assert.deepEqual(listen(on), [false, 'Claude listening', 'on']);
+  const off = await chatPage({ comments: fakeComments({ can: 'no_session' }) });
+  assert.deepEqual(listen(off), [false, 'No Claude session listening', 'off']);
+  for (const can of ['writers_only', 'off', 'something_new']) {
+    const page = await chatPage({ comments: fakeComments({ can }) });
+    assert.equal(page.ids['grid-listen'].hidden, true, can);
+  }
+  const none = await chatPage({ comments: null });
+  assert.equal(none.ids['grid-listen'].hidden, true);
+  // The pill text is fixed copy, never a row's text.
+  assert.equal(off.ids['grid-listen'].children.length, 0);
+});
+
+test('listening pill: re-checked on window focus (at most every 10 s), visibility and the minute tick; one poller', async () => {
+  const comments = fakeComments({ can: 'available' });
+  const page = await chatPage({ comments });
+  assert.equal(comments.calls.can, 1);
+  comments.state.can = 'no_session';
+  page.win('focus');
+  await settle();
+  assert.equal(comments.calls.can, 1, 'a focus right after a check does not check again');
+  page.setNow(NOW + 11e3);
+  page.win('focus');
+  await settle();
+  assert.equal(comments.calls.can, 2);
+  assert.deepEqual(listen(page), [false, 'No Claude session listening', 'off']);
+  assert.equal(chatOf(page).banner.hidden, false, 'the banner follows the same check');
+  comments.state.can = 'available';
+  page.doc('visibilitychange');
+  await settle();
+  assert.equal(comments.calls.can, 3);
+  assert.deepEqual(listen(page), [false, 'Claude listening', 'on']);
+  page.setNow(NOW + 200e3);
+  page.intervals[0].fn();
+  await settle();
+  assert.equal(comments.calls.can, 4);
+  assert.equal(page.intervals.length, 1, 'no second poller');
+  assert.equal(page.pending().length, 0, 'no timers');
+  page.ids['view-runs'].click();
+  page.setNow(NOW + 400e3);
+  page.win('focus');
+  await settle();
+  assert.equal(comments.calls.can, 4, 'nothing is checked on Runs');
+  assert.equal(comments.calls.send.length + comments.calls.create.length + comments.calls.reply.length, 0, 'checks post nothing');
+});
+
+test('no watcher: every coordinator window shows the banner with its Open session link, over the box', async () => {
+  const page = await gridPage({ comments: fakeComments({ can: 'no_session' }) });
+  runSnap(page, [runRow(), runRow({ _docId: 'other-run', feature: 'Other', session_url: SESSION2 })]);
+  await settle();
+  for (const [i, session] of [[0, SESSION], [1, SESSION2]]) {
+    const c = chatOf(page, i);
+    assert.equal(c.banner.hidden, false);
+    assert.equal(c.banner.getAttribute('role'), 'note');
+    assert.equal(byClass(c.banner, 'nowatch-text')[0].textContent, NO_WATCHER);
+    const [a] = c.banner.find((e) => e.tagName === 'A');
+    assert.deepEqual([a.hidden, a.textContent, a.href, a.rel, a.target], [false, 'Open session', session, 'noopener noreferrer', '_blank']);
+    const kids = byClass(c.panel, 'chat')[0].children;
+    assert.ok(kids.indexOf(c.banner) < kids.indexOf(c.form), 'above the input');
+    assert.equal(c.form.hidden, false, 'sending stays allowed');
+  }
+});
+
+test('no watcher: Send posts a plain comment (create, then reply in its thread), never sendToClaude; the line says so', async () => {
+  const comments = fakeComments({ can: 'no_session' });
+  const page = await chatPage({ comments });
+  const c = chatOf(page);
+  await sendIn(c, 'are you there?');
+  assert.equal(comments.calls.send.length, 0, 'sendToClaude would reject claude_unavailable and post nothing');
+  assert.equal(comments.calls.create.length, 1);
+  assert.deepEqual(Object.keys(comments.calls.create[0]), ['anchor', 'text']);
+  assert.match(comments.calls.create[0].text, new RegExp(`^\\[run ${RUN} #[a-z0-9]{6}\\] are you there\\?$`));
+  assert.deepEqual(comments.calls.anchor, [c.title], 'anchored on the window title at the press');
+  assert.equal(c.input.value, '');
+  assert.equal(stage(page)[0], 'posted');
+  assert.match(stage(page)[1], /^Posted as a plain comment: no coordinator was watching/);
+  assert.equal(dline(page).find((e) => e.tagName === 'A')[0].hidden, false, 'Open session is offered');
+  await sendIn(c, 'second');
+  assert.equal(comments.calls.reply.length, 1);
+  assert.equal(comments.calls.reply[0][0], 'p1', 'into the same thread');
+  // A session starts watching: the next press goes to Claude again, in the same thread.
+  comments.state.can = 'available';
+  page.doc('visibilitychange');
+  await settle();
+  await sendIn(c, 'third');
+  assert.equal(comments.calls.send.length, 1);
+  assert.deepEqual(Object.keys(comments.calls.send[0]), ['threadId', 'text']);
+  assert.equal(comments.calls.send[0].threadId, 'p1');
+  assert.equal(stage(page)[0], 'delivered');
+});
+
+test('waiting: Delivered, not picked up and posted count; Queued only after 5 minutes; a reply clears it', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  assert.deepEqual(waiting(page), [true, '0 waiting']);
+  await sendIn(c, 'one');
+  assert.deepEqual(waiting(page), [false, '1 waiting'], 'Delivered');
+  page.setNow(NOW + 3 * MIN);
+  page.intervals[0].fn();
+  assert.equal(stage(page)[0], 'late');
+  assert.deepEqual(waiting(page), [false, '1 waiting'], 'not picked up');
+  await sendIn(c, 'two');
+  assert.deepEqual(waiting(page), [false, '2 waiting'], 'older messages count too, not just the newest');
+  assert.equal(page.ids['grid-waiting'].getAttribute('aria-label'), '2 messages with no reply yet; go to the oldest');
+  // The coordinator picks up the newest (seen_ref): one is still waiting.
+  const nonces = [0, 1].map((i) => /#([a-z0-9]{6})\]/.exec(sentText(page, i))[1]);
+  statusSnap(page, { status: { state: 'idle', seen_ref: nonces[1], at: iso(NOW + 4 * MIN) } });
+  assert.deepEqual(waiting(page), [false, '1 waiting']);
+  // It mirrors both and replies after them: nothing waits.
+  chatSnap(page, [mirror('r1', { kind: 'reply', text: 'On it.', at: iso(NOW + 4 * MIN) }),
+    mirror('k2', { from: 'kyle', text: 'two', ref: nonces[1], at: iso(NOW + 3 * MIN) }),
+    mirror('k1', { from: 'kyle', text: 'one', ref: nonces[0], at: iso(NOW) })]);
+  assert.deepEqual(waiting(page), [true, '0 waiting']);
+  // Queued (the coordinator is mid-task): not waiting until it is 5 minutes old.
+  const q = await chatPage();
+  statusSnap(q, { status: { state: 'working', text: 'Tests', at: iso(NOW) } });
+  await sendIn(chatOf(q), 'queued one');
+  assert.equal(stage(q)[0], 'queued');
+  assert.deepEqual(waiting(q), [true, '0 waiting']);
+  q.setNow(NOW + 5 * MIN + 1000);
+  q.intervals[0].fn();
+  assert.equal(stage(q)[0], 'queued');
+  assert.deepEqual(waiting(q), [false, '1 waiting']);
+  // A failed send is not waiting.
+  const f = await chatPage();
+  f.comments.replies.push(() => Promise.reject({ code: 'rate_limited' }));
+  await sendIn(chatOf(f), 'x');
+  assert.deepEqual(waiting(f), [true, '0 waiting']);
+  // Posted with no watcher waits too.
+  const n = await chatPage({ comments: fakeComments({ can: 'no_session' }) });
+  await sendIn(chatOf(n), 'anyone?');
+  assert.deepEqual(waiting(n), [false, '1 waiting']);
+});
+
+test('waiting: the badge goes to the oldest waiting message\'s window, restoring the workspace or a hidden window', async () => {
+  const page = await gridPage();
+  runSnap(page, [runRow(), runRow({ _docId: 'other-run', feature: 'Other', session_url: SESSION2 })]);
+  agentSnap(page, [agent('a1')]);
+  await settle();
+  const second = chatOf(page, 1);
+  await sendIn(second, 'first, in the second window');
+  page.setNow(NOW + MIN);
+  await sendIn(chatOf(page, 0), 'later, in the first window');
+  assert.deepEqual(waiting(page), [false, '2 waiting']);
+  // Another window is maximized: the badge restores the workspace first.
+  byClass(tile(page, 'agent-a1'), 'max')[0].click();
+  const scrolled = [];
+  second.panel.scrollIntoView = () => scrolled.push('window');
+  const myBubble = bubbles(page, 1).at(-1);
+  myBubble.scrollIntoView = () => scrolled.push('message');
+  const before = second.input.focused;
+  page.ids['grid-waiting'].click();
+  assert.equal(page.ids.coords.dataset.max, undefined, 'restored');
+  assert.deepEqual(scrolled, ['window', 'message']);
+  assert.equal(second.input.focused, before + 1, 'its chat box has focus');
+  assert.equal(page.ids['grid-live'].textContent, 'Oldest message waiting: Other.');
+  // A hidden window comes back.
+  byClass(second.panel, 'hide')[0].click();
+  page.ids['grid-waiting'].click();
+  assert.ok(windows(page).includes(second.panel), 'shown again');
+  assert.equal(page.comments.calls.send.length, 2, 'the badge never sends');
+});
+
+const keydown = (page, key, extra = {}) => page.doc('keydown', { key, ...extra });
+
+test('shortcuts: "/" focuses the maximized coordinator\'s box, else the first one shown; ignored while typing', async () => {
+  const page = await gridPage();
+  runSnap(page, [runRow(), runRow({ _docId: 'other-run', feature: 'Other', session_url: SESSION2 })]);
+  agentSnap(page, [agent('a1')]);
+  await settle();
+  const first = chatOf(page, 0);
+  const second = chatOf(page, 1);
+  const ev = keydown(page, '/');
+  assert.equal(ev.defaultPrevented, true);
+  assert.equal(first.input.focused, 1);
+  // Typing in a field: "/" and "?" are just characters.
+  const typed = keydown(page, '/', { target: first.input });
+  assert.equal(typed.defaultPrevented, false);
+  assert.equal(keydown(page, '?', { target: second.input }).defaultPrevented, false);
+  assert.equal(page.ids['grid-keys'].hidden, true);
+  // With the second coordinator maximized, "/" goes to its box.
+  byClass(second.panel, 'max')[0].click();
+  keydown(page, '/');
+  assert.equal(second.input.focused, 1);
+  // With an agent maximized there is no box on screen: nothing happens.
+  byClass(tile(page, 'agent-a1'), 'max')[0].click();
+  assert.equal(keydown(page, '/').defaultPrevented, false);
+  keydown(page, 'Escape');
+  // Ctrl or Cmd with "/" belongs to the browser; on Runs nothing is handled.
+  assert.equal(keydown(page, '/', { ctrlKey: true }).defaultPrevented, false);
+  assert.equal(keydown(page, '/', { metaKey: true }).defaultPrevented, false);
+  assert.equal(keydown(page, '/').defaultPrevented, true);
+  page.ids['view-runs'].click();
+  assert.equal(keydown(page, '/').defaultPrevented, false);
+});
+
+test('shortcuts: Alt+1..9 maximize the Nth window shown (by key code); ignored while typing', async () => {
+  const page = await gridPage();
+  runSnap(page, [runRow()]);
+  agentSnap(page, [agent('a1'), agent('a2', { started_at: iso(NOW - 20 * MIN) })]);
+  await settle();
+  const ids = windows(page).map((w) => w.id);
+  assert.equal(ids.length, 3);
+  const ev = keydown(page, '™', { altKey: true, code: 'Digit2' });  // a Mac types a symbol with Alt
+  assert.equal(ev.defaultPrevented, true);
+  assert.equal(page.ids.coords.dataset.max, '');
+  assert.equal(windows(page).find((w) => 'max' in w.dataset).id, ids[1]);
+  keydown(page, '3', { altKey: true, code: 'Digit3' });
+  assert.equal(windows(page).find((w) => 'max' in w.dataset).id, ids[2]);
+  keydown(page, '3', { altKey: true, code: 'Digit3' });
+  assert.equal(windows(page).find((w) => 'max' in w.dataset).id, ids[2], 'the same key keeps it maximized');
+  assert.equal(keydown(page, '9', { altKey: true, code: 'Digit9' }).defaultPrevented, false, 'no 9th window');
+  const c = chatOf(page);
+  assert.equal(keydown(page, '1', { altKey: true, code: 'Digit1', target: c.input }).defaultPrevented, false);
+  assert.equal(windows(page).find((w) => 'max' in w.dataset).id, ids[2]);
+  // Esc still restores.
+  keydown(page, 'Escape');
+  assert.equal(page.ids.coords.dataset.max, undefined);
+});
+
+test('shortcuts: "?" toggles the help; Esc closes it and returns focus, before un-maximizing', async () => {
+  const page = await chatPage();
+  const help = page.ids['grid-keys'];
+  const c = chatOf(page);
+  byClass(c.panel, 'max')[0].click();
+  const restore = byClass(c.panel, 'max restore')[0];
+  page.document.activeElement = restore;
+  assert.equal(keydown(page, '?').defaultPrevented, true);
+  assert.equal(help.hidden, false);
+  assert.equal(help.focused, 1);
+  assert.equal(page.ids['grid-keys-btn'].getAttribute('aria-expanded'), 'true');
+  const before = restore.focused;
+  assert.equal(keydown(page, 'Escape').defaultPrevented, true);
+  assert.equal(help.hidden, true);
+  assert.equal(restore.focused, before + 1, 'focus goes back');
+  assert.equal(page.ids.coords.dataset.max, '', 'the first Esc only closed the help');
+  keydown(page, 'Escape');
+  assert.equal(page.ids.coords.dataset.max, undefined, 'the next Esc restores');
+  // "?" again and the toolbar button toggle; Close closes.
+  keydown(page, '?');
+  keydown(page, '?');
+  assert.equal(help.hidden, true);
+  page.ids['grid-keys-btn'].click();
+  assert.equal(help.hidden, false);
+  page.ids['grid-keys-close'].click();
+  assert.equal(help.hidden, true);
+  assert.equal(page.ids['grid-keys-btn'].getAttribute('aria-expanded'), 'false');
+  // Esc in the box with a quote clears the quote only (the box marks it handled).
+  byClass(c.panel, 'max')[0].click();
+  c.input.dispatch('keydown', { key: 'Escape' });  // no quote: not handled by the box
+  // On Runs, "?" does nothing.
+  page.ids['view-runs'].click();
+  assert.equal(keydown(page, '?').defaultPrevented, false);
+  assert.equal(help.hidden, true);
+});
+
+const findBtn = (c) => c.panel.find((e) => e.tagName === 'BUTTON' && e.textContent === '🔍')[0];
+const searchOf = (c) => ({ box: byClass(c.panel, 'chat-search')[0], input: byClass(c.panel, 'chat-search-input')[0],
+  count: byClass(c.panel, 'chat-search-count')[0] });
+const shownBubbles = (page) => bubbles(page).filter((b) => !b.hidden).map(bubbleText);
+
+test('search: the 🔍 toggle filters one transcript by message text, case-insensitive, with N of M', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  chatSnap(page, [
+    mirror('m4', { kind: 'reply', text: 'Tests are GREEN now', at: iso(NOW - MIN) }),
+    mirror('a2', { kind: 'activity', text: 'Ran green tests', at: iso(NOW - 2 * MIN) }),
+    mirror('a1', { kind: 'activity', text: 'Pushed', at: iso(NOW - 3 * MIN) }),
+    mirror('m2', { from: 'kyle', text: 'are the tests green?', at: iso(NOW - 4 * MIN) }),
+    mirror('m1', { text: 'Started <b>work</b>', at: iso(NOW - 5 * MIN) }),
+  ]);
+  const btn = findBtn(c);
+  assert.equal(btn.getAttribute('aria-label'), 'Search the conversation in Voice speed');
+  assert.equal(btn.getAttribute('aria-expanded'), 'false');
+  const s = searchOf(c);
+  assert.equal(s.box.hidden, true);
+  btn.click();
+  assert.equal(s.box.hidden, false);
+  assert.equal(btn.getAttribute('aria-expanded'), 'true');
+  assert.equal(s.input.focused, 1);
+  assert.equal(s.count.textContent, '3 of 3');
+  s.input.value = 'gReEn';
+  s.input.dispatch('input');
+  assert.deepEqual(shownBubbles(page), ['are the tests green?', 'Tests are GREEN now']);
+  assert.equal(s.count.textContent, '2 of 3');
+  assert.equal(byClass(c.log, 'acts')[0].hidden, true, 'activity rows hide while searching');
+  // Markup in the query or the text is just text.
+  s.input.value = '<b>';
+  s.input.dispatch('input');
+  assert.equal(s.count.textContent, '1 of 3');
+  assert.equal(c.panel.find((e) => e.tagName === 'B').length, 0);
+  // A new message while searching is filtered too.
+  chatSnap(page, [mirror('m5', { kind: 'reply', text: 'nothing here' }), mirror('m1', { text: 'Started <b>work</b>', at: iso(NOW - 5 * MIN) })]);
+  assert.deepEqual(shownBubbles(page), ['Started <b>work</b>']);
+  assert.equal(s.count.textContent, '1 of 2');
+  // The toggle closes it and everything shows again.
+  btn.click();
+  assert.equal(s.box.hidden, true);
+  assert.equal(s.input.value, '');
+  assert.equal(bubbles(page).filter((b) => b.hidden).length, 0);
+  assert.equal(btn.focused, 1, 'focus back on the toggle');
+});
+
+test('search: Esc in the field closes it without restoring the maximized window; agent windows have no search', async () => {
+  const page = await chatPage();
+  agentSnap(page, [agent('a1')]);
+  const c = chatOf(page);
+  chatSnap(page, [mirror('m2', { text: 'beta' }), mirror('m1', { text: 'alpha', at: iso(NOW - 2 * MIN) })]);
+  byClass(c.panel, 'max')[0].click();
+  c.log.scrollTop = 0;
+  c.log.scrollHeight = 500;
+  c.log.clientHeight = 100;
+  const s = searchOf(c);
+  findBtn(c).click();
+  s.input.value = 'alpha';
+  s.input.dispatch('input');
+  assert.deepEqual(shownBubbles(page), ['alpha']);
+  const esc = s.input.dispatch('keydown', { key: 'Escape' });
+  assert.equal(esc.defaultPrevented, true);
+  keydown(page, 'Escape', { defaultPrevented: true });  // the document sees it as handled
+  assert.equal(page.ids.coords.dataset.max, '', 'still maximized');
+  assert.equal(s.box.hidden, true);
+  assert.deepEqual(shownBubbles(page), ['alpha', 'beta']);
+  assert.equal(c.log.scrollTop, 0, 'the scroll position is restored');
+  assert.equal(findBtn({ panel: tile(page, 'agent-a1') }), undefined);
+});
+
+test('search: messages that arrive during a search get the New messages pill when it closes', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  chatSnap(page, [mirror('m2', { text: 'beta' }), mirror('m1', { text: 'alpha', at: iso(NOW - 2 * MIN) })]);
+  // Kyle has scrolled up.
+  c.log.scrollHeight = 1000;
+  c.log.clientHeight = 100;
+  c.log.scrollTop = 200;
+  const s = searchOf(c);
+  findBtn(c).click();
+  s.input.value = 'alpha';
+  s.input.dispatch('input');
+  c.log.scrollTop = 0;
+  c.log.scrollHeight = 100;  // the filtered list fits: "near the bottom"
+  chatSnap(page, [mirror('m3', { text: 'gamma, new' }), mirror('m2', { text: 'beta' }),
+    mirror('m1', { text: 'alpha', at: iso(NOW - 2 * MIN) })]);
+  assert.equal(c.pill.hidden, true, 'no pill over the filtered list');
+  assert.equal(c.log.scrollTop, 0, 'the log does not follow while searching');
+  c.log.scrollHeight = 1100;
+  findBtn(c).click();
+  assert.equal(c.log.scrollTop, 200, 'back where Kyle was');
+  assert.equal(c.pill.hidden, false, 'the new message is not lost');
+  // Opened at the bottom: closing goes back to the bottom with no pill.
+  c.pill.click();
+  c.log.scrollTop = c.log.scrollHeight - c.log.clientHeight;
+  findBtn(c).click();
+  chatSnap(page, [mirror('m4', { text: 'delta' }), mirror('m3', { text: 'gamma, new' })]);
+  findBtn(c).click();
+  assert.equal(c.log.scrollTop, c.log.scrollHeight);
+  assert.equal(c.pill.hidden, true);
+});
+
+test('search: sending closes it, so Kyle\'s message and its delivery line show; focus stays in the box', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  chatSnap(page, [mirror('m1', { text: 'alpha' })]);
+  const s = searchOf(c);
+  findBtn(c).click();
+  s.input.value = 'alpha';
+  s.input.dispatch('input');
+  const findFocus = findBtn(c).focused;
+  await sendIn(c, 'unrelated words');
+  assert.equal(s.box.hidden, true);
+  assert.equal(s.input.value, '');
+  assert.deepEqual(shownBubbles(page), ['alpha', 'unrelated words']);
+  assert.equal(dline(page).hidden, false);
+  assert.equal(stage(page)[0], 'delivered');
+  assert.equal(findBtn(c).focused, findFocus, 'focus is not pulled to the toggle');
+});
+
+test('search: Esc anywhere in its window closes it before the help or a maximized window', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  chatSnap(page, [mirror('m2', { text: 'beta' }), mirror('m1', { text: 'alpha', at: iso(NOW - 2 * MIN) })]);
+  byClass(c.panel, 'max')[0].click();
+  const s = searchOf(c);
+  findBtn(c).click();
+  s.input.value = 'alpha';
+  s.input.dispatch('input');
+  // Focus moved to the message box (no quote): the box leaves Esc to the document.
+  const boxEsc = c.input.dispatch('keydown', { key: 'Escape' });
+  assert.equal(boxEsc.defaultPrevented, undefined);
+  const ev = keydown(page, 'Escape', { target: c.input });
+  assert.equal(ev.defaultPrevented, true);
+  assert.equal(s.box.hidden, true, 'the search closed');
+  assert.deepEqual(shownBubbles(page), ['alpha', 'beta']);
+  assert.equal(page.ids.coords.dataset.max, '', 'still maximized');
+  // Found through the focused element too (a title bar button, say).
+  findBtn(c).click();
+  page.document.activeElement = byClass(c.panel, 'max restore')[0];
+  keydown(page, 'Escape');
+  assert.equal(s.box.hidden, true);
+  assert.equal(page.ids.coords.dataset.max, '');
+  keydown(page, 'Escape');
+  assert.equal(page.ids.coords.dataset.max, undefined, 'the next Esc restores');
 });

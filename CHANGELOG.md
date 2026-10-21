@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Grid: a "Claude listening" / "No Claude session listening" pill in the
+  toolbar (any session watching the dashboard, re-checked on show, focus,
+  visibility and at most once a minute). With no session watching, every
+  coordinator chat shows a banner saying messages won't wake it (with
+  Open session), and Send still posts your message as a plain comment a
+  session can read later.
+- Grid: an "N waiting" badge counts your messages with no Seen or reply
+  yet and jumps to the oldest.
+- Grid keyboard shortcuts: `/` to the chat box, Alt+1–9 to maximize a
+  window, `?` for the shortcuts panel (Esc closes it).
+- Search a coordinator conversation (🔍 in its title bar), with an
+  "N of M" count.
+
 - The agent dashboard now lives in its own repo (extracted with its git
   history from kylechen839-max/Claude-Personal-Assistant, where it was
   `tools/agent-dashboard/`). The page is in `dashboard/`, the tests in
