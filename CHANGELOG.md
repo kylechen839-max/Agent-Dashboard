@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed: after a reload every chat opened at its oldest message. Each
+  transcript now opens at its newest message and stays pinned there
+  until you scroll up, also when the window is resized or maximized.
 - Claude settings: pre-approve `mcp__claude-code-remote__create_session` (Kyle, 2026-10-21) so the coordinator can start sessions on his own machines, such as the trusted relay.
 - Design skills: `.claude/skills/` now has three vendored, pinned skills
   for UI work (Anthropic `frontend-design`, Vercel `web-design-guidelines`
