@@ -1712,7 +1712,22 @@ main[data-view="grid"]{height:100%;gap:12px}
       t.hintBad = false;
       t.logSeen = false;
       t.stick = false;
-      t.log.addEventListener("scroll", () => { if (nearBottom(t.log)) t.pill.hidden = true; });
+      // A chat opens at its newest message and stays there until Kyle
+      // scrolls up. The log is often filled before its window is laid out
+      // (no height yet, so scrolling then does nothing): atEnd remembers
+      // the wish, and the resize observer scrolls once the log has a size.
+      t.atEnd = true;
+      t.log.addEventListener("scroll", () => {
+        if (t.log.clientHeight > 0) t.atEnd = nearBottom(t.log);
+        if (nearBottom(t.log)) t.pill.hidden = true;
+      });
+      if (typeof ResizeObserver === "function") {
+        try {
+          new ResizeObserver(() => {
+            if (t.atEnd && t.searchBox.hidden) { scrollEnd(t.log); t.pill.hidden = true; }
+          }).observe(t.log);
+        } catch (_) { /* no observer: renders still scroll */ }
+      }
       // Opening or closing History resizes the log: one that was at the
       // bottom stays there (read at the press, before the details toggle).
       t.histPin = false;
@@ -2671,7 +2686,11 @@ main[data-view="grid"]{height:100%;gap:12px}
     // list may fit); closing the search shows the pill for them instead.
     const searching = !t.searchBox.hidden;
     if (!sameChildren(t.log, list)) {
-      const stick = !searching && (t.stick || !t.logSeen || nearBottom(t.log));
+      // Laid out, the scroll position decides; not laid out yet (no height),
+      // the last known wish (atEnd) does.
+      const laidOut = t.log.clientHeight > 0;
+      const stick = !searching && (t.stick || !t.logSeen || (laidOut ? nearBottom(t.log) : t.atEnd));
+      if (laidOut && !searching) t.atEnd = stick;
       const before = t.log.children.length ? t.log.children[t.log.children.length - 1] : null;
       t.log.replaceChildren(...list);
       if (stick) { scrollEnd(t.log); t.pill.hidden = true; }
