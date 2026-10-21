@@ -177,7 +177,11 @@ def test_page_links_only_to_allowed_prefixes():
     head, rest = page.split("/*kinds*/", 1)
     kinds, tail = rest.split("/*/kinds*/", 1)
     urls = set(re.findall(r'"(https://[^"]*)"', head + tail))
-    assert urls == {SESSION_PREFIX, PR_PREFIX}
+    # The markdown renderer's bare GitHub PR/issue check is the one other
+    # literal: a prefix test before the strict GH_LINK pattern, not a link.
+    assert urls == {SESSION_PREFIX, PR_PREFIX, "https://github.com/"}
+    assert page.count('"https://github.com/"') == 1
+    assert 's.startsWith("https://github.com/", i)' in page
     assert set(re.findall(r'"(https?://[^"]*)"', kinds)) == {DASHBOARD_URL}
 
 
@@ -195,7 +199,7 @@ def test_watchdog_prompt_is_one_fenced_block():
 
 # ---- Grid (workspace), the coordinator chat and desktop launchers ----
 
-DASHBOARD_URL = "https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G"
+DASHBOARD_URL = "https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn"
 DESKTOP = DASH / "desktop"
 MANIFEST = '{"db":{}, "user":{}, "comments":{}, "downloads":true, "assets":{}}'
 
@@ -231,9 +235,11 @@ def test_page_posts_comments_only_from_the_chat_box():
     # Exactly one sendToClaude call site, inside sendChat.
     assert page.count(".sendToClaude(") == 1
     assert ".sendToClaude(" in _function(page, "async function sendChat(")
-    # Only the Send button's click and the box's Enter call sendChat.
-    assert page.count("sendChat(") == 3  # the definition and two listeners
+    # Only the Send button's click, the box's Enter and the delivery line's
+    # Resend click call sendChat (Resend: Kyle's own press, same call site).
+    assert page.count("sendChat(") == 4  # the definition and three listeners
     assert 't.send.addEventListener("click", () => sendChat(t));' in page
+    assert 't.resend.addEventListener("click", () => sendChat(t, true));' in _function(page, "function makeTile(")
     assert "sendChat(t);" in _function(page, "function makeTile(")
     # The anchor is read on the window's title at the gesture.
     assert "comments.anchorFor(t.h2)" in _function(page, "async function sendChat(")
@@ -323,8 +329,13 @@ def test_page_renders_markdown_with_elements_only():
     # only ever set through el()'s textContent; one link sink, after the check.
     assert re.findall(r"\bel\(", renderer) == ["el("] * 2  # renderMarkdown's root and mk()
     assert "textContent" not in renderer.split("\n", 1)[1]
-    assert renderer.count(".href =") == 1
+    # Two link sinks: a markdown link after the http(s) check, and a GitHub
+    # PR/issue chip whose URL is exactly what the strict GH_LINK matched.
+    assert renderer.count(".href =") == 2
     assert re.search(r"/\^https\?:\\/\\//i\.test\(url\)", renderer)
+    assert "a.href = m[0];" in _function(page, "function ghChip(")
+    assert renderer.count("ghChip(gh, st)") == 2 and renderer.count("GH_LINK.exec(") == 2
+    assert "const GH_LINK = /^https:\\/\\/github\\.com\\/" in page
     assert 'a.rel = "noopener noreferrer"' in renderer and 'a.target = "_blank"' in renderer
     assert "const MD_BUDGET = 2000;" in page
 
@@ -524,3 +535,44 @@ def test_paths_point_into_this_repo():
         text = path.read_text(encoding="utf-8")
         assert "tools/agent-dashboard" not in text, path
         assert "tools\\agent-dashboard" not in text, path
+
+
+# ---- The move to a new artifact URL ----
+
+OLD_ARTIFACT_ID = "CpPTyJkkHZ7CK8jsPYZq4G"
+
+
+def test_old_artifact_id_is_gone():
+    """The old artifact stopped waking the coordinator; only the changelog
+    history may still name it."""
+    for path in ROOT.rglob("*"):
+        parts = set(path.relative_to(ROOT).parts)
+        if (not path.is_file() or parts & {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+                or path.name == "CHANGELOG.md"):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if path.name == "test_agent_dashboard.py":
+            text = text.replace(f'OLD_ARTIFACT_ID = "{OLD_ARTIFACT_ID}"', "")
+        assert OLD_ARTIFACT_ID not in text, path
+
+
+def test_moved_page_points_to_the_new_dashboard():
+    page = (DASH / "moved.html").read_text(encoding="utf-8")
+    assert page.startswith("<title>Agent Runs (moved)</title>\n")
+    lowered = page.lower()
+    # No script, no document tags (claude.ai wraps it), no external assets.
+    for banned in ("<script", "<html", "<head", "<body", "<link", "<img", "@import", "url(", "javascript:"):
+        assert banned not in lowered, banned
+    assert not re.search(r"<[^>]*\son[a-z]+\s*=", lowered)
+    assert "The agent dashboard has moved" in page
+    assert "Update your desktop launcher: open the new dashboard, ⋯ menu → Get desktop app." in page
+    links = re.findall(r"<a\b[^>]*>", page)
+    assert links == [f'<a href="{DASHBOARD_URL}" target="_blank" rel="noopener noreferrer">']
+    assert set(re.findall(r"https?://[^\s\"'<>)]+", page)) == {DASHBOARD_URL}
+    # Light and dark, with both dark selectors (system and explicit).
+    assert ":root{" in page
+    assert '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' in page
+    assert ':root[data-theme="dark"]{' in page

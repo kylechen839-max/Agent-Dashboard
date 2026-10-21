@@ -6,6 +6,24 @@
   for UI work (Anthropic `frontend-design`, Vercel `web-design-guidelines`
   with its rules read locally, Addy Osmani `accessibility`), plus
   `DESIGN_SKILLS.md` with their sources and where this repo's rules win.
+- Dashboard moved to a new artifact URL (the old one stopped waking the
+  coordinator); re-download the desktop launcher from Get desktop app.
+  `dashboard/moved.html` (markup and style only) is published over the
+  old artifact and links to the new one.
+- Coordinator chat: a maximized coordinator window uses the full width
+  (the meta folds to one line and History starts closed, so the
+  transcript gets the height). Messages read like the Claude Code app:
+  15 px prose with room between paragraphs and list items, bordered
+  tables, code chips, no "Coordinator · reply · time" header (the time
+  shows on hover, or after a 5-minute gap; only questions and reports
+  keep a small tag), GitHub PR and issue links as "⇅ owner/repo#n"
+  chips, and activity as one "Ran tests, pushed the branch and 2 more ›"
+  line that opens.
+- Resend: a message the coordinator hasn't picked up after 2 minutes
+  gets a Resend button ("Not picked up yet. Resend to wake the
+  coordinator again."). It sends the same message once more in the same
+  thread, marked "(resent)", once per message.
+
 - Dashboard redesign: one calm card look in both themes (no dark terminal
   body); a ⋯ menu at the top right with Close idle, Auto-close, Reset
   layout and Get desktop app; window controls that show on hover or

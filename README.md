@@ -5,8 +5,13 @@ page that shows each run (Runs view) and a window workspace of the
 coordinator and agent sessions with a chat box per coordinator (Grid
 view).
 
-- **Live page:** https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G (open it
-  signed in to claude.ai on a desktop browser).
+- **Live page:** https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn (open it
+  signed in to claude.ai on a desktop browser). It moved here on
+  2026-10-21 because the old artifact stopped delivering chat wakes to
+  the coordinator; the old URL now shows
+  [`dashboard/moved.html`](dashboard/moved.html), a static card linking
+  here. Re-download the desktop launcher from the ⋯ menu → Get desktop
+  app.
 - **Source:** [`dashboard/index.html`](dashboard/index.html). The page is
   a claude.ai artifact: a Claude Code session (the coordinator, or
   "master") republishes it from this file. Nothing in this repo runs on

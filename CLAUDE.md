@@ -1,7 +1,7 @@
 # Agent dashboard: notes for Claude Code sessions
 
 This repo is one static page, `dashboard/index.html`, published as the
-claude.ai artifact https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G, plus
+claude.ai artifact https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn, plus
 its docs, desktop launchers and tests. The `/build-feature` master that
 writes the dashboard's data lives in the Hey Claude repo
 (kylechen839-max/Claude-Personal-Assistant); the row schemas it writes are
@@ -10,6 +10,8 @@ in `dashboard/README.md`, and changes to them go in both repos.
 ## Layout
 - `dashboard/index.html`: the page (no external assets, no document tags;
   claude.ai wraps it).
+- `dashboard/moved.html`: a static card (no script) published over the
+  old artifact URL, linking to the current one.
 - `dashboard/README.md`: schemas, views, chat box, rules, manifest.
 - `dashboard/WATCHDOG.md`: the hourly watchdog's prompt (one fenced block).
 - `dashboard/desktop/`: `open-dashboard.cmd` (CRLF) and

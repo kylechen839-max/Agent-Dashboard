@@ -9,7 +9,7 @@
    master writes). Rows are untrusted data: text only, links only to the
    two allowed prefixes. The page never writes to the db. A coordinator
    window's chat box posts Kyle's message as a comment sent to Claude
-   (comments.sendToClaude, only from his own click or Enter; a plain
+   (comments.sendToClaude, only from his own click, Enter or Resend; a plain
    comments.create/reply when no Claude session is watching) and shows the
    coordinator's private mirror of the conversation from Kyle's own
    data/users/<id>/ subtree. Window order and size are kept per viewer in
@@ -294,47 +294,85 @@ main[data-view="grid"]{height:100%;gap:12px}
    a third of the window); the transcript gives way, never the box. ---- */
 .chat{flex:1 1 140px;display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line);
   font-size:14.5px;line-height:1.55}
-.tile[data-max] .tile-body>*{width:100%;max-width:860px;margin-inline:auto}
-.tile[data-max] .tile-head{padding-inline:max(14px,calc((100% - 860px) / 2))}
+.tile[data-max] .tile-head{padding-inline:28px}
+.tile[data-max] .tile-body{padding:0 28px 20px}
+/* Maximized: the meta folds to one line (its title has it all) and History
+   starts closed, so the transcript gets the height. */
+.tile[data-max] .coord-meta{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tile[data-max] .coord-meta>*{display:inline;margin:0}
+.tile[data-max] .coord-meta>*+*::before{content:" · "}
 .logwrap{position:relative;flex:1 1 70px;min-height:4.5em}
 .log{position:absolute;inset:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding:4px 2px 6px;overscroll-behavior:contain}
 .log>.empty{margin:auto 0 0;font-size:13px;color:var(--muted)}
 .msg{position:relative;min-width:0;overflow-wrap:anywhere}
 .msg[data-from="coordinator"]{align-self:stretch}
-.msg[data-from="kyle"]{align-self:flex-end;max-width:80%;padding:8px 14px;border-radius:18px 18px 6px 18px;background:var(--surface-2)}
-.msg[data-kind="question"]{padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--needs-bg) 70%,transparent);
+.msg[data-from="kyle"]{font-size:15px;line-height:1.55;align-self:flex-end;max-width:min(80%,80ch);padding:8px 14px;border-radius:18px 18px 6px 18px;background:var(--surface-2)}
+.msg[data-kind="question"]{padding:10px 14px;border-radius:10px;background:color-mix(in srgb,var(--needs-bg) 70%,transparent);
   box-shadow:inset 2px 0 0 var(--needs-edge)}
-.msg .meta{display:flex;flex-wrap:wrap;gap:0 6px;margin-bottom:2px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.msg[data-from="coordinator"]:not([data-kind="update"]) .meta .at::before{content:"· "}
-.msg[data-kind="update"] .meta .who{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.msg[data-from="kyle"] .meta{display:none}
-.msg[data-kind="question"] .who{color:var(--needs);font-weight:500}
+/* No header per message: the time shows on hover (top right; left of
+   Kyle's bubble), and as a small line only after a 5-minute gap. A
+   question or report keeps a small tag. "Coordinator"/"You" are for
+   screen readers. */
+.msg .meta{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px;font-size:12px;line-height:1.4;color:var(--muted);
+  font-variant-numeric:tabular-nums}
+.msg .meta .who{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.msg:is([data-stamp],[data-tag]) .meta{margin-bottom:4px}
+.msg:not([data-stamp]) .meta .at{position:absolute;top:2px;right:0;padding-left:8px;opacity:0;pointer-events:none;
+  background:var(--card)}
+.msg[data-kind="question"]:not([data-stamp]) .meta .at{top:10px;right:12px;background:transparent}
+.msg[data-from="kyle"]:not([data-stamp]) .meta .at{top:auto;bottom:9px;right:calc(100% + 8px);padding:0;background:none;white-space:nowrap}
+.msg[data-from="kyle"][data-stamp] .meta{display:none}
+.msg:hover .meta .at{opacity:1}
+.msg .meta .state{display:none}
+.msg .tag{font-size:12px;font-weight:500;color:var(--muted)}
+.tile[data-max] .msg[data-kind="question"]{align-self:flex-start;max-width:min(100%,calc(120ch + 28px))}
+.msg[data-kind="question"] .tag{color:var(--needs)}
 .msg .plain{white-space:pre-wrap}
 .msg .plain blockquote{margin:0 0 4px;padding-left:10px;border-left:2px solid var(--line);color:var(--muted)}
-.act{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:13px;color:var(--muted)}
+.act{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:13.5px;line-height:1.5;color:var(--muted)}
 .act .icon{flex:none;width:1em;text-align:center}
 .act .atext{overflow-wrap:anywhere}
-.acts{display:flex;flex-direction:column;gap:4px}
-.acts-toggle{align-self:flex-start;padding:0;font-size:13px;color:var(--muted);background:none}
+/* Activity like Claude Code's tool lines: one muted summary that opens. */
+.acts{display:flex;flex-direction:column;gap:6px;min-width:0}
+.acts-toggle{align-self:flex-start;display:inline-flex;align-items:baseline;gap:6px;max-width:100%;min-width:0;padding:0;
+  font-size:13.5px;line-height:1.5;text-align:left;color:var(--muted);background:none}
 .acts-toggle:hover{color:var(--fg)}
-.acts-list{display:flex;flex-direction:column;gap:4px;padding-left:2px}
-.md>*{margin:.55em 0 0}.md>:first-child{margin-top:.15em}
-.md h3,.md h4,.md h5,.md h6{font-weight:600;line-height:1.35}
-.md h3{font-size:1.12em}.md h4{font-size:1.06em}.md h5,.md h6{font-size:1em}
-.md strong{font-weight:600}
-.md ul,.md ol{display:block;padding-left:1.6em}.md ul{list-style:disc}.md ol{list-style:decimal}.md li{display:list-item;margin:.15em 0}
+.acts-sum{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts-chev{flex:none;display:inline-block;font-size:1.1em;line-height:1}
+.acts-toggle[aria-expanded="true"] .acts-chev{transform:rotate(90deg)}
+.acts-list{display:flex;flex-direction:column;gap:4px;margin-left:3px;padding-left:12px;border-left:2px solid var(--line)}
+/* Coordinator messages: Claude Code's prose. 15px, 1.6, 12px between
+   blocks; lists indented with room between items; bold a shade stronger;
+   code a soft chip; tables bordered with a header row. */
+.md{font-size:15px;line-height:1.6}
+.md>*{margin:12px 0 0}.md>:first-child{margin-top:0}
+.tile[data-max] .md>:is(p,ul,ol,blockquote,h3,h4,h5,h6){max-width:120ch}
+.md h3,.md h4,.md h5,.md h6{font-weight:650;line-height:1.35}
+.md>:is(h3,h4,h5,h6):not(:first-child){margin-top:18px}
+.md h3{font-size:1.15em}.md h4{font-size:1.06em}.md h5,.md h6{font-size:1em}
+.md strong{font-weight:650;color:var(--fg)}
+.md ul,.md ol{display:block;padding-left:1.5em}.md ul{list-style:disc}.md ol{list-style:decimal}
+.md li{display:list-item;margin:6px 0 0;padding-left:.2em}.md li:first-child{margin-top:0}
+.md li>:is(ul,ol){margin-top:6px}
+.md li::marker{color:var(--muted)}
 .md a{color:var(--accent);text-decoration:none}.md a:hover{text-decoration:underline}
-.md code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border-radius:5px;padding:.1em .35em}
-.md pre{position:relative;overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;background:var(--surface-2);
+.md code{font-family:var(--mono);font-size:.84em;background:var(--surface-2);border:1px solid var(--line);border-radius:5px;
+  padding:.05em .35em}
+.md .ghchip{display:inline-flex;align-items:baseline;gap:4px;max-width:100%;padding:0 6px;font-size:.88em;line-height:1.5;
+  vertical-align:baseline;color:var(--accent);background:var(--accent-soft);border-radius:6px;overflow-wrap:anywhere}
+.md .ghchip:hover{text-decoration:none;filter:brightness(.97)}
+.md .ghglyph{flex:none;font-size:.9em;opacity:.8}
+.md pre{position:relative;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.55;background:var(--surface-2);
   border-radius:var(--r-lg);padding:10px 12px;white-space:pre}
 .md pre[data-lang]{padding-top:24px}
 .md pre[data-lang]::before{content:attr(data-lang);position:absolute;top:5px;left:12px;font-size:11px;color:var(--muted);font-family:var(--body)}
-.md pre code{padding:0;background:none;font-size:inherit}
+.md pre code{padding:0;background:none;border:0;font-size:inherit}
 .md blockquote{margin-left:0;padding-left:12px;border-left:2px solid var(--line);color:var(--muted)}
-.md .tablewrap{overflow-x:auto}
-.md table{border-collapse:collapse;font-size:.92em;color:inherit}
-.md th,.md td{border:1px solid var(--line);padding:4px 9px;text-align:left;vertical-align:top}
-.md th{font-weight:600}
+.md .tablewrap{overflow-x:auto;width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:var(--r-lg)}
+.md table{border-collapse:collapse;font-size:.93em;line-height:1.5;color:inherit}
+.md th,.md td{padding:8px 14px;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+.md th+th,.md td+td{border-left:1px solid var(--line)}
+.md thead th{border-top:0;font-weight:600;background:var(--surface-2)}
 .md hr{border:0;border-top:1px solid var(--line)}
 .md-rest{white-space:pre-wrap}
 .newpill,.replybtn{height:26px;padding:0 12px;font-size:12px;color:var(--on-accent);background:var(--accent);border-radius:var(--r-pill);
@@ -352,6 +390,9 @@ main[data-view="grid"]{height:100%;gap:12px}
 .dline[data-stage="seen"]::before{content:"✓✓";letter-spacing:-.2em;margin-right:.2em;color:var(--accent)}
 .dline[data-stage="late"],.dline[data-stage="posted"]{color:var(--needs)}
 .dline[data-stage="failed"]{color:var(--silent)}
+.dresend{flex:none;height:22px;padding:0 10px;font-size:12px;font-weight:500;color:var(--accent);background:var(--accent-soft);
+  border-radius:var(--r-pill)}
+.dresend:hover{background:var(--hover)}
 .dline[data-stage="queued"] .spin{animation:pulse 2.4s ease-in-out infinite}
 @media (prefers-reduced-motion: reduce){.dline[data-stage="queued"] .spin{animation:none}}
 /* Presence: a dot and its text; it carries "working", so the row below hides. */
@@ -942,6 +983,11 @@ main[data-view="grid"]{height:100%;gap:12px}
   const MAYBE_MS = 120 * 60e3;      // ... this fresh "In task (no update for ...)"; older counts as idle
   const QUEUED = "Queued · coordinator is mid-task; it reads new messages when this step ends";
   const NOT_PICKED = "Coordinator hasn't picked this up yet. It may be busy; it checks for missed messages after each reply.";
+  const RESEND_NOTE = "Not picked up yet. Resend to wake the coordinator again.";
+  const STAMP_GAP_MS = 5 * 60e3;    // a message more than this after the one before shows its time
+  // A GitHub pull request or issue URL, shown as a small "owner/repo#n"
+  // chip (a bare URL in the text, or a markdown link labelled with it).
+  const GH_LINK = /^https:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]{1,100})\/(pull|issues)\/(\d{1,7})(?![A-Za-z0-9_\/#?=&%-])/;
   const WORK_TEXT_MAX = 80;
   const SEND_STOP = ["not_granted", "capability_disabled", "capability_removed", "forbidden"];
 
@@ -1603,7 +1649,13 @@ main[data-view="grid"]{height:100%;gap:12px}
       t.dtext = el("span", "dtext");
       t.dtime = el("span", "dtime");
       t.dopen = link("Open session", SESSION_PREFIX);
-      t.dline.append(dspin, t.dtext, t.dtime, t.dopen);
+      // Resend: on a message not picked up, once (Kyle's click).
+      t.resend = el("button", "dresend", "Resend");
+      t.resend.type = "button";
+      t.resend.title = "Send this message again to wake the coordinator";
+      t.resend.hidden = true;
+      t.lineMsg = null;
+      t.dline.append(dspin, t.dtext, t.dtime, t.dopen, t.resend);
       t.work = el("div", "work");
       t.work.setAttribute("role", "status");
       t.work.hidden = true;
@@ -1683,6 +1735,7 @@ main[data-view="grid"]{height:100%;gap:12px}
         sendChat(t);
       });
       t.send.addEventListener("click", () => sendChat(t));
+      t.resend.addEventListener("click", () => sendChat(t, true));
       // mousedown would clear the selection before the click lands.
       t.replyBtn.addEventListener("mousedown", (e) => { if (e.preventDefault) e.preventDefault(); });
       t.replyBtn.addEventListener("click", () => {
@@ -1768,6 +1821,7 @@ main[data-view="grid"]{height:100%;gap:12px}
     }
     meta.push(el("p", "when", p.elapsedMs === null ? "elapsed ?" : `elapsed ${duration(p.elapsedMs)}`), ...notes);
     t.meta.replaceChildren(...meta);
+    t.meta.title = meta.map((e) => e.textContent).join(" · ");  // maximized, the meta is one clipped line
     if (multi) t.meta.dataset.multi = ""; else delete t.meta.dataset.multi;
     // History: the summary shows the newest status line; the body holds
     // them all (oldest first) and the run id.
@@ -1962,6 +2016,9 @@ main[data-view="grid"]{height:100%;gap:12px}
     // Leaving a maximized window counts as keeping it: auto-close must not
     // hide the window Kyle was just reading.
     if (!t && prev && isIdle(prev)) { keepShown(prev); saveLayout(); }
+    // A maximized coordinator gives the transcript the height: History
+    // starts closed (its one-line summary); it still opens on a click.
+    if (t && t.coord) t.hist.open = false;
     renderGrid();
     if (t) {
       if (t.coord) t.stick = true;
@@ -2557,13 +2614,17 @@ main[data-view="grid"]{height:100%;gap:12px}
     const next = Object.create(null);
     const list = [];
     const recs = [];  // for search: each element with its message text (null: not a message)
+    let prevAt = null;  // the time of the message before (a 5-minute gap shows the time)
     for (let i = 0; i < items.length; i += 1) {
       const m = items[i];
+      const gap = m.at !== null && (prevAt === null || m.at - prevAt > STAMP_GAP_MS);
+      if (m.at !== null) prevAt = m.at;
       if (m.kind === "activity" && m.from === "coordinator") {
         // Consecutive activity rows collapse into one "N steps" row.
         let j = i;
         while (j + 1 < items.length && items[j + 1].kind === "activity" && items[j + 1].from === "coordinator") j += 1;
         const run = items.slice(i, j + 1);
+        for (const x of run) if (x.at !== null) prevAt = x.at;
         const gkey = "g " + m.key;
         const sig = run.map((x) => x.key + "\u0002" + x.text).join("\u0001");
         let b = t.bubbles[gkey];
@@ -2575,9 +2636,9 @@ main[data-view="grid"]{height:100%;gap:12px}
         continue;
       }
       const kind = m.kind === "question" ? (m === open ? "question" : "asked") : m.kind;
-      const sig = [m.from, kind, m.at, m.state, m.text, m.atts ? m.atts.length : 0].join("\u0001");
+      const sig = [m.from, kind, m.at, m.state, m.text, m.atts ? m.atts.length : 0, gap].join("\u0001");
       let b = t.bubbles[m.key];
-      if (!b || b.sig !== sig) b = {sig, el: bubble(m, kind)};
+      if (!b || b.sig !== sig) b = {sig, el: bubble(m, kind, gap)};
       next[m.key] = b;
       list.push(b.el);
       recs.push({el: b.el, text: m.text});
@@ -2593,6 +2654,8 @@ main[data-view="grid"]{height:100%;gap:12px}
       showLine(t, line, p.session);
     }
     t.lineShown = !!line;
+    // What Resend may act on: this message, while its line offers it.
+    t.lineMsg = line && line.resend ? last : null;
     // Waiting: each of Kyle's messages from this visit still at Delivered,
     // not picked up, posted with no watcher, or queued over WAIT_QUEUED_MS.
     const nowW = Date.now();
@@ -2697,8 +2760,13 @@ main[data-view="grid"]{height:100%;gap:12px}
     // Not seen while the coordinator is in a task: queued, not lost.
     if (m.plain) return {stage: "posted", text: POSTED, open: !!session};
     if (presence(chat, now).state === "task") return {stage: "queued", text: QUEUED, spin: true};
-    if (now - sent > PICKUP_MS) return {stage: "late", text: NOT_PICKED, open: !!session};
-    return {stage: "delivered", text: "Delivered"};
+    // Late: once per message it offers Resend (with a watching session);
+    // a resend starts the 2 minutes again, and Seen on it clears the line.
+    if (now - (m.resentAt || sent) > PICKUP_MS) {
+      const resend = !m.resentAt && sendState === "available";
+      return {stage: "late", text: resend ? RESEND_NOTE : NOT_PICKED, open: !!session, resend};
+    }
+    return {stage: "delivered", text: m.resentAt ? "Delivered · resent" : "Delivered"};
   }
 
   // "just now", "3m", "1h 20m": the working timer, refreshed each minute.
@@ -2716,28 +2784,49 @@ main[data-view="grid"]{height:100%;gap:12px}
     t.dtime.hidden = !line.time;
     t.dopen.hidden = !line.open;
     if (line.open && t.dopen.href !== session) t.dopen.href = session;
+    t.resend.hidden = !line.resend;
+    t.resend.disabled = sending;
     // The line shows as a small icon or a clipped line; the title has it all.
     t.dline.title = line.text + (line.time ? ` · ${line.time}` : "");
   }
 
-  // Activity rows: one compact muted line each, text only; a run of 2 or
-  // more collapses into an expandable "N steps" row.
-  function activityRow(m) {
+  // Activity rows, like Claude Code's tool lines: one muted line, text
+  // only. A run of 2 or more collapses into one summary line ("Builder
+  // returned, ran tests and 2 more ›") that opens to the steps, each with
+  // ✓ or •.
+  function activityRow(m, icon) {
     const row = el("div", "act");
-    row.append(el("span", "icon", CHECK_WORD.test(m.text) ? "✓" : "•"), el("span", "atext", m.text));
+    if (icon) row.append(el("span", "icon", CHECK_WORD.test(m.text) ? "✓" : "•"));
+    row.append(el("span", "atext", m.text));
     return row;
   }
+  // The first three steps (each up to its " · " detail), joined; the
+  // rest counted.
+  function activitySummary(run) {
+    const parts = run.slice(0, 3).map((x, i) => {
+      const s = x.text.split(" · ")[0].trim() || x.text;
+      return i && /^[A-Z][a-z]/.test(s) ? s[0].toLowerCase() + s.slice(1) : s;
+    });
+    const more = run.length - parts.length;
+    if (more) return `${parts.join(", ")} and ${more} more`;
+    return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : parts[0];
+  }
   function activityGroup(t, gkey, run) {
-    if (run.length === 1) return activityRow(run[0]);
+    if (run.length === 1) return activityRow(run[0], false);
     const box = el("div", "acts");
     const toggle = el("button", "acts-toggle");
     toggle.type = "button";
+    const sum = activitySummary(run);
+    toggle.title = `${run.length} steps`;
+    const chev = el("span", "acts-chev", "›");
+    chev.setAttribute("aria-hidden", "true");
+    toggle.append(el("span", "acts-sum", sum), chev);
     const body = el("div", "acts-list");
-    body.append(...run.map(activityRow));
+    body.append(...run.map((m) => activityRow(m, true)));
     const show = (open) => {
       t.openActs[gkey] = open;
       toggle.setAttribute("aria-expanded", String(open));
-      toggle.textContent = `${run.length} steps ${open ? "▾" : "▸"}`;
+      toggle.setAttribute("aria-label", `${run.length} steps: ${sum}`);
       body.hidden = !open;
     };
     toggle.addEventListener("click", () => show(!t.openActs[gkey]));
@@ -2746,13 +2835,19 @@ main[data-view="grid"]{height:100%;gap:12px}
     return box;
   }
 
-  function bubble(m, kind) {
+  // A message: no header line. "Coordinator"/"You" for screen readers; a
+  // small tag only on a question or report; the time on hover, or as a
+  // line when `gap` (over 5 minutes since the message before).
+  function bubble(m, kind, gap) {
     const b = el("div", "msg");
     b.dataset.from = m.from;
     b.dataset.kind = kind;
+    if (gap) b.dataset.stamp = "";
     const meta = el("div", "meta");
-    const who = m.from === "kyle" ? "You" : "Coordinator" + (m.kind === "update" ? "" : ` · ${m.kind}`);
-    meta.append(el("span", "who", who), el("span", "at", m.at === null ? "?" : stamp(m.at)));
+    meta.append(el("span", "who", m.from === "kyle" ? "You" : "Coordinator"));
+    const tag = m.from === "coordinator" && (m.kind === "question" || m.kind === "report") ? m.kind : "";
+    if (tag) { b.dataset.tag = tag; meta.append(el("span", "tag", tag === "question" ? "Question" : "Report")); }
+    meta.append(el("span", "at", m.at === null ? "?" : stamp(m.at)));
     if (m.state) meta.append(el("span", "state", m.state));
     b.append(meta, m.from === "kyle" ? kyleText(m.text) : renderMarkdown(m.text));
     if (m.atts && m.atts.length) {
@@ -3004,36 +3099,67 @@ main[data-view="grid"]{height:100%;gap:12px}
     return s;
   }
 
-  // Only the Send button's click and the box's Enter call this. With a
-  // watching session it is sendToClaude; with none ("no_session", read at
-  // the press) it posts the same text as a plain comment (create, or reply
-  // in this visit's thread), which wakes no one but a session can read later.
-  async function sendChat(t) {
+  // Only the Send button's click, the box's Enter and the delivery line's
+  // Resend call this. With a watching session it is sendToClaude; with none
+  // ("no_session", read at the press) it posts the same text as a plain
+  // comment (create, or reply in this visit's thread), which wakes no one
+  // but a session can read later.
+  // `again` (Resend): the message the line shows as not picked up goes
+  // once more, in the same thread, with the same "[run … #nonce]" header
+  // plus " (resent)"; its stage tracking carries on (Seen on that nonce
+  // clears it). Only with a watching session, and once per message.
+  async function sendChat(t, again) {
     const p = t.panel;
     if (!p || !p.session || !comments || sendOff || sending) return;
     if (sendState !== "available" && sendState !== "no_session") return;
     const plain = sendState === "no_session";
-    const draft = t.input.value;
-    const quote = t.quote;
-    const said = cleanSend(draft);
-    const atts = t.atts.filter((a) => a.state === "ready");
-    const body = quote && (said.trim() || atts.length) ? cleanSend(quoteLines(quote)) + said : said;
-    if (t.atts.some((a) => a.state === "uploading")) {
-      t.hintText = "Wait for the attachments to finish uploading.";
-      t.hintBad = false;
-      renderGrid();
-      return;
-    }
-    if (!body.trim() && !atts.length) return;
     const key = p.session;
-    const nonce = nonce6();
-    // A quote starts on its own line, so it reads as a blockquote.
-    const prefix = `[run ${p.runId} #${nonce}] ` + (body !== said ? "\n" : "");
-    const full = prefix + body;
-    // The attachment lines are counted first, so they always fit.
-    const tail = attLines(atts);
-    const head = capUtf8(full, SEND_MAX - utf8Len(tail));
-    const textOut = head + tail;
+    const mine = pendingBy[key] || (pendingBy[key] = []);
+    let msg = null;
+    let textOut = "";
+    let cut = false;
+    let draft = "";
+    let quote = "";
+    let keptAtts = [];
+    if (again) {
+      msg = t.lineMsg;
+      if (plain || !msg || msg.resentAt || msg.state !== "sent" || mine.at(-1) !== msg) return;
+      const prefix = `[run ${msg.runId} #${msg.nonce}] (resent) ` + (msg.nl ? "\n" : "");
+      const head = capUtf8(prefix + msg.text, SEND_MAX - utf8Len(msg.tail));
+      textOut = head + msg.tail;
+      cut = head.length < prefix.length + msg.text.length;
+      msg.resentAt = Date.now();  // once: a definite failure gives it back
+    } else {
+      draft = t.input.value;
+      quote = t.quote;
+      const said = cleanSend(draft);
+      const atts = t.atts.filter((a) => a.state === "ready");
+      const body = quote && (said.trim() || atts.length) ? cleanSend(quoteLines(quote)) + said : said;
+      if (t.atts.some((a) => a.state === "uploading")) {
+        t.hintText = "Wait for the attachments to finish uploading.";
+        t.hintBad = false;
+        renderGrid();
+        return;
+      }
+      if (!body.trim() && !atts.length) return;
+      const nonce = nonce6();
+      // A quote starts on its own line, so it reads as a blockquote.
+      const nl = body !== said;
+      const prefix = `[run ${p.runId} #${nonce}] ` + (nl ? "\n" : "");
+      const full = prefix + body;
+      // The attachment lines are counted first, so they always fit.
+      const tail = attLines(atts);
+      const head = capUtf8(full, SEND_MAX - utf8Len(tail));
+      textOut = head + tail;
+      cut = head.length < full.length;
+      const known = Object.create(null);  // mirror docs already here: none of them answers this message
+      for (const d of (chats[key] && chats[key].docs) || []) known["d " + String(d._id)] = true;
+      msg = {nonce, text: head.slice(prefix.length), at: Date.now(), state: "sending", known, plain,
+        runId: p.runId, nl, tail,
+        atts: atts.map((a) => ({name: a.name, type: a.type, size: a.size, url: a.url, id: a.id, state: "ready"}))};
+      mine.push(msg);
+      if (mine.length > PENDING_MAX) mine.splice(0, mine.length - PENDING_MAX);
+    }
     const thread = threads[key];
     sending = true;
     // The anchor is read now, at the gesture, on the window's title.
@@ -3041,24 +3167,19 @@ main[data-view="grid"]{height:100%;gap:12px}
     if (!thread) {
       try { anchorP = comments.anchorFor(t.h2); } catch (e) { anchorP = Promise.reject(e); }
     }
-    const mine = pendingBy[key] || (pendingBy[key] = []);
-    const known = Object.create(null);  // mirror docs already here: none of them answers this message
-    for (const d of (chats[key] && chats[key].docs) || []) known["d " + String(d._id)] = true;
-    const msg = {nonce, text: head.slice(prefix.length), at: Date.now(), state: "sending", known, plain,
-      atts: atts.map((a) => ({name: a.name, type: a.type, size: a.size, url: a.url, id: a.id, state: "ready"}))};
-    mine.push(msg);
-    if (mine.length > PENDING_MAX) mine.splice(0, mine.length - PENDING_MAX);
     t.hintText = "";
     t.hintBad = false;
     // A typed search would hide this message and its delivery line.
     if (!t.searchBox.hidden) setSearch(t, false, true);
     t.stick = true;
-    // Clear the box at once: the bubble shows "Sending…" while claude.ai
-    // confirms; a failed send puts the draft back.
-    t.input.value = "";
-    const keptAtts = t.atts;
-    t.atts = [];
-    t.quote = "";
+    if (!again) {
+      // Clear the box at once: the bubble shows "Sending…" while claude.ai
+      // confirms; a failed send puts the draft back.
+      t.input.value = "";
+      keptAtts = t.atts;
+      t.atts = [];
+      t.quote = "";
+    }
     renderGrid();
     let hint = "";
     let bad = false;
@@ -3071,16 +3192,13 @@ main[data-view="grid"]{height:100%;gap:12px}
         res = await comments.sendToClaude(target);
       }
       if (res && typeof res.threadId === "string" && res.threadId) threads[key] = res.threadId;
-      msg.state = "sent";
-      msg.sentAt = Date.now();
+      if (again) msg.resentAt = Date.now();
+      else { msg.state = "sent"; msg.sentAt = Date.now(); }
       unavailableSeen = 0;
-      if (head.length < full.length) hint = "Sent, cut to fit 4 KB.";
+      if (cut) hint = "Sent, cut to fit 4 KB.";
     } catch (e) {
       const code = e && typeof e.code === "string" ? e.code : "upstream_error";
-      msg.state = "not sent";
-      if (!t.input.value) t.input.value = draft;
-      if (!t.atts.length) t.atts = keptAtts;
-      if (!t.quote) t.quote = quote;
+      let maybe = false;
       if (SEND_STOP.includes(code)) sendOff = true;
       else if (code === "unavailable") {
         unavailableSeen += 1;
@@ -3089,13 +3207,20 @@ main[data-view="grid"]{height:100%;gap:12px}
       else if (code === "not_found") { delete threads[key]; hint = SEND_COPY.not_found; bad = true; }
       else if (code === "consent_required" || code === "rate_limited" || code === "claude_unavailable") {
         hint = SEND_COPY[code]; bad = true;
+      } else { maybe = true; hint = SEND_COPY.upstream_error; bad = true; }
+      if (again) {
+        // The original stays sent; a resend that surely didn't post may be tried again.
+        if (!maybe) msg.resentAt = undefined;
       } else {
-        msg.state = "may have been sent"; hint = SEND_COPY.upstream_error; bad = true;
-        for (const a of keptAtts) a.maybeSent = true;
+        msg.state = maybe ? "may have been sent" : "not sent";
+        if (!t.input.value) t.input.value = draft;
+        if (!t.atts.length) t.atts = keptAtts;
+        if (!t.quote) t.quote = quote;
+        if (maybe) for (const a of keptAtts) a.maybeSent = true;
+        const why = hint || SEND_OFF;
+        msg.reason = /^(Not sent|May have)/.test(why) ? why : "Not sent: " + why;
       }
       if (code === "claude_unavailable") { sending = false; checkSend(true); }
-      const why = hint || SEND_OFF;
-      msg.reason = /^(Not sent|May have)/.test(why) ? why : "Not sent: " + why;
     }
     sending = false;
     t.hintText = hint;
@@ -3360,6 +3485,13 @@ main[data-view="grid"]{height:100%;gap:12px}
         if (paren > close) {
           const label = s.slice(i + 1, close);
           const url = s.slice(close + 2, paren).trim();
+          const gh = label === url || !label ? GH_LINK.exec(url) : null;
+          if (gh && gh[0] === url) {
+            flush();
+            out.append(ghChip(gh, st));
+            i = paren + 1;
+            continue;
+          }
           if (/^https?:\/\//i.test(url) && url.length <= 2048 && !/\s/.test(url)) {
             flush();
             const a = mk(st, "a", "", label || url);
@@ -3375,10 +3507,34 @@ main[data-view="grid"]{height:100%;gap:12px}
         i += 1;
         continue;
       }
+      // A bare GitHub PR or issue URL (not glued to a word) is a chip.
+      if (ch === "h" && s.startsWith("https://github.com/", i) && (i === 0 || !/[A-Za-z0-9_/:.=-]/.test(s[i - 1]))) {
+        const gh = GH_LINK.exec(s.slice(i, i + 180));
+        if (gh) {
+          flush();
+          out.append(ghChip(gh, st));
+          i += gh[0].length;
+          continue;
+        }
+      }
       buf += ch;
       i += 1;
     }
     flush();
+  }
+
+  // "⇅ owner/repo#12" (a pull request) or "◎ owner/repo#12" (an issue): an
+  // <a> to the URL the strict GH_LINK pattern matched, noopener.
+  function ghChip(m, st) {
+    const a = mk(st, "a", "ghchip");
+    const glyph = mk(st, "span", "ghglyph", m[3] === "pull" ? "⇅" : "◎");
+    glyph.setAttribute("aria-hidden", "true");
+    a.append(glyph, mk(st, "span", "", `${m[1]}/${m[2]}#${m[4]}`));
+    a.href = m[0];
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.title = (m[3] === "pull" ? "Pull request " : "Issue ") + `${m[1]}/${m[2]}#${m[4]}`;
+    return a;
   }
 
   // ---- view switch: Runs stays the default ----
@@ -3438,7 +3594,7 @@ main[data-view="grid"]{height:100%;gap:12px}
   // first click only. The templates below are the files in desktop/
   // (tests/test_agent_dashboard.py checks they match).
   const LAUNCHER_TEXT = /*launchers*/{"cmd": ["@echo off", "rem Opens {what} in its own Chrome or Edge window (no tabs or", "rem address bar), signed in with your normal browser profile. Falls back to", "rem the default browser. See dashboard\\README.md.", "setlocal", "set \"URL={url}\"", "if exist \"%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe\" (start \"\" \"%ProgramFiles%\\Google\\Chrome\\Application\\chrome.exe\" --app=%URL% & exit /b 0)", "if exist \"%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe\" (start \"\" \"%ProgramFiles(x86)%\\Google\\Chrome\\Application\\chrome.exe\" --app=%URL% & exit /b 0)", "if exist \"%LocalAppData%\\Google\\Chrome\\Application\\chrome.exe\" (start \"\" \"%LocalAppData%\\Google\\Chrome\\Application\\chrome.exe\" --app=%URL% & exit /b 0)", "if exist \"%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe\" (start \"\" \"%ProgramFiles(x86)%\\Microsoft\\Edge\\Application\\msedge.exe\" --app=%URL% & exit /b 0)", "if exist \"%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe\" (start \"\" \"%ProgramFiles%\\Microsoft\\Edge\\Application\\msedge.exe\" --app=%URL% & exit /b 0)", "rem No Chrome or Edge found: open it as a normal tab in the default browser.", "start \"\" \"%URL%\"", "exit /b 0"], "command": ["#!/usr/bin/env bash", "# Opens {what} in its own Chrome or Edge window (no tabs or", "# address bar), signed in with your normal browser profile. Falls back to", "# the default browser. See dashboard/README.md.", "set -euo pipefail", "", "URL=\"{url}\"", "", "# Checked silently: asking `open` to find the app (-Ra) shows it in Finder", "# on every launch.", "for app in \"Google Chrome\" \"Microsoft Edge\"; do", "  if [ -d \"/Applications/$app.app\" ] || [ -d \"$HOME/Applications/$app.app\" ]; then", "    exec open -na \"$app\" --args --app=\"$URL\"", "  fi", "done", "", "# No Chrome or Edge found: open it as a normal tab in the default browser.", "exec open \"$URL\""]}/*/launchers*/;
-  const LAUNCHER_KINDS = /*kinds*/{"dashboard": {"file": "open-dashboard", "what": "the agent dashboard", "url": "https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G"}}/*/kinds*/;
+  const LAUNCHER_KINDS = /*kinds*/{"dashboard": {"file": "open-dashboard", "what": "the agent dashboard", "url": "https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn"}}/*/kinds*/;
   const GETAPP_STOP = ["unavailable", "not_granted", "capability_disabled", "capability_removed"];
   const $getapp = document.getElementById("getapp");
   const $getappBtn = document.getElementById("getapp-btn");

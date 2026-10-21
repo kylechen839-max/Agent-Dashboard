@@ -15,7 +15,7 @@ buttons at the top (the choice is remembered on that device):
   **chat box** that sends Kyle's message to the coordinator and shows
   everything the coordinator tells him (see [Chat box](#chat-box)).
 
-- **URL:** https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G (a claude.ai
+- **URL:** https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn (a claude.ai
   artifact with the `db`, `user`, `comments` and `downloads` capabilities;
   open it signed in on a desktop browser; it can have its own window, see
   [Desktop window](#desktop-window)). The page is desktop only: it has no
@@ -251,7 +251,11 @@ back-off on `resource_exhausted`, one retry after 5–30 s otherwise).
   the workspace; the others are hidden, not removed. Esc or the window's
   ⤡ button (same place and style, labelled "Restore <title>") goes back,
   and focus returns to ⤢. It is not saved;
-  if the window disappears, the workspace restores itself.
+  if the window disappears, the workspace restores itself. A maximized
+  coordinator window uses the full width (28 px sides): its meta folds to
+  one clipped line (the tooltip has it all) and History starts closed on
+  its one-line summary (a click still opens it), so the transcript gets
+  the height.
 - **Filter:** **Active only** (the default: every session with a needs
   you, running or silent row, else the newest one as "Last run") or
   **All recent** (every session with a row from the last 14 days).
@@ -357,7 +361,7 @@ Each coordinator window with a session link has a transcript and a box.
   thread (`{threadId, text}`, kept in memory for the visit). The text is
   `[run <run_id> #<nonce>] ` plus the message, without control
   characters other than newline and tab, cut to 4000 UTF-8 bytes. One
-  send at a time; never at load, on a timer or as a retry.
+  send at a time; never at load, on a timer or as an automatic retry (Resend, below, is Kyle's own press).
 - **Reply.** Select text inside one message of a coordinator's
   transcript and a small **Reply** button shows on that message (a
   selection anywhere else, or across two messages, shows none). It puts
@@ -425,31 +429,59 @@ Each coordinator window with a session link has a transcript and a box.
   | `claude_unavailable` | nothing was posted; re-checks `canSendToClaude` |
   | `upstream_error`, unknown | "May have been sent; check before resending." |
 
-- **The look** follows the Claude app: the chat sits on the window's own
-  card under a thin divider, in the page's palette and font at 14.5 px
-  (when maximized, a centred column at most 860 px wide). Coordinator
-  messages are full width with no bubble, under a small time line (the
-  date too when not today); other kinds than `update` keep a quiet
-  "Coordinator · report" tag (for `update` the word is read out to
-  screen readers only). Kyle's messages are right-aligned grey bubbles
-  (at most 80 % wide). The open question has a soft amber background
-  and an amber edge. Activity rows are compact muted lines (✓ when the
-  text starts with a word like Ran, Passed, Done, Merged or Pushed, else
-  •), and consecutive ones collapse into one "N steps ▸" row that
-  expands. The box is a rounded field (blue edge when focused) with a
-  round blue Send button inside it.
+- **The look** follows the Claude Code app: the chat sits on the
+  window's own card under a thin divider, in the page's palette and font.
+  Maximized, the transcript and the box span the whole window; only
+  prose (paragraphs, lists, quotes, headings) keeps a 120-character line,
+  left-aligned. Coordinator messages are full-width prose with no bubble
+  and no header line: 15 px, line height 1.6, 12 px between blocks,
+  lists indented with 6 px between items, bold a shade stronger, inline
+  code a soft chip, tables bordered with a grey header row and padded
+  cells. A message's time shows on hover (top right; left of Kyle's
+  bubble), and as a small line only when it came more than 5 minutes
+  after the message before (the date too when not today). Only a
+  `question` or `report` keeps a small "Question"/"Report" tag;
+  "Coordinator"/"You" is read out to screen readers only. A GitHub pull
+  request or issue URL (`https://github.com/<owner>/<repo>/pull/<n>` or
+  `/issues/<n>`, bare in the text or as a link labelled with that URL)
+  is a small "⇅ owner/repo#n" chip (◎ for an issue), still a link with
+  `noopener noreferrer`; anything looser (another host, `http`, a
+  longer path, a `#` or `?` after it) stays text, and a link with its
+  own label stays a plain link. Kyle's messages are right-aligned grey
+  bubbles (at most 80 % wide or 80 characters). The open question has a
+  soft amber background and an amber edge. Activity rows are muted lines
+  like Claude Code's tool lines: one alone is its text; consecutive ones
+  collapse into one summary, "Builder round 1 returned, ran tests and
+  started the judge ›" (the first three steps, each up to its " · "
+  detail, then "and N more"), that opens to the steps, each with ✓ (text
+  starting with a word like Ran, Passed, Done, Merged or Pushed) or •.
+  The box is a rounded field (blue edge when focused) with a round blue
+  Send button inside it.
 - **The delivery line** under Kyle's message is small: Delivered is a
   ✓, Seen is a blue ✓✓ and the time, Sending, Working and Queued are the
   ✻ and one line cut to fit; Not picked up, Posted and Not sent show
   their full text, amber or red, with Open session. Its tooltip always
   has the full text and time, and screen readers hear the words.
+- **Resend.** When a message reaches Not picked up (2 minutes with no
+  Seen, not mid-task) and a session is watching, the line reads "Not
+  picked up yet. Resend to wake the coordinator again." with a small
+  **Resend** button. Pressing it (Kyle's click; the same `sendChat` and
+  its one `sendToClaude` call) sends the same text again as a reply in
+  the same thread, headed `[run <run_id> #<same nonce>] (resent) `, with
+  the quote and attachment lines, inside 4000 bytes. No second bubble:
+  the line goes back to Delivered ("Delivered · resent") and the stage
+  tracking carries on, so Seen on that nonce (or its mirrored copy) or
+  the reply clears it. Once per message: after 2 more minutes it turns
+  amber again without Resend. A resend that surely didn't post (a
+  definite error) can be pressed again; "may have been sent" can't. With
+  no session watching there is no Resend (a plain comment wakes no one).
 - **Presence** (above the box) is a dot and its text, not a pill; while
   it reads "In task: <step> · 4m" the separate "✻ Working… 3m" row is
   hidden (it would say the same thing).
 - **The transcript** is the coordinator's mirror (below), newest 200,
-  oldest first, each message with its time; coordinator messages are
+  oldest first; coordinator messages are
   rendered as markdown (headings, bold, em, code, fences, quotes, lists,
-  tables, http(s) links; elements and text only, never markup, about
+  GFM pipe tables, http(s) links, GitHub PR/issue chips; elements and text only, never markup, about
   2000 elements per message). Kyle's own message shows at once as
   "sending", then "sent" or "not sent", until its mirrored copy (same
   nonce in `ref`) replaces it. The newest unanswered `question` is amber
@@ -484,6 +516,14 @@ need a real browser on a real keyboard:
   window controls appear when the pointer is over a window and when you
   Tab into one, the ⋯ menu opens under its button and closes on a click
   outside or Esc, and the one-line footer opens in full on hover.
+- **A maximized coordinator on a wide screen** (2560 px and a laptop):
+  the chat fills the window edge to edge with even side margins, a
+  long report reads cleanly (paragraph and list spacing, the table, the
+  PR chips open the right PR in a new tab), and a message's time shows
+  when the pointer is over it.
+- **Resend for real:** when a message sits at "Not picked up yet",
+  pressing Resend wakes the coordinator, and it treats the "(resent)"
+  copy as the same message (it answers once).
 
 ## Chat mirror schema (Kyle's private subtree, written only by the master)
 
@@ -535,7 +575,9 @@ copy arrives), then "Coordinator · working: <step>" (animated, with the
 elapsed time) while the status is fresh. The coordinator's reply clears
 it. Delivered with no pickup for 2 minutes turns amber: "Coordinator
 hasn't picked this up yet. It may be busy; it checks for missed messages
-after each reply." with Open session. A failed send shows "Not sent:
+after each reply." with Open session (with a watching session, the
+first time: "Not picked up yet. Resend to wake the coordinator again."
+and Resend, above). A failed send shows "Not sent:
 <reason>" in red. While that line shows, the working row above the box
 is hidden. Every `at` comes from the clock at
 write time; a message not from today shows its date too.
@@ -553,7 +595,7 @@ browser.
   (Program Files, Program Files (x86), then your user folder), then Edge.
   To pin it: right-click the desktop → New → Shortcut, and enter the
   browser path plus the option, for example
-  `"C:\Program Files\Google\Chrome\Application\chrome.exe" --app=https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G`
+  `"C:\Program Files\Google\Chrome\Application\chrome.exe" --app=https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn`
   (Edge: `"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"`).
   Name it "Agent dashboard", then open it and right-click its taskbar
   icon → Pin to taskbar.
