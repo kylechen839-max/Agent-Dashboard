@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Dashboard moved to a new artifact URL (the old one stopped waking the
+  coordinator); re-download the desktop launcher from Get desktop app.
+  `dashboard/moved.html` (markup and style only) is published over the
+  old artifact and links to the new one.
 - Coordinator chat: a maximized coordinator window uses the full width
   (the meta folds to one line and History starts closed, so the
   transcript gets the height). Messages read like the Claude Code app:

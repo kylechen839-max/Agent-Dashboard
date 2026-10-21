@@ -81,6 +81,10 @@ Claude repo.
 - **Desktop launchers** only open the fixed artifact URL in Chrome or
   Edge (`--app=`) or the default browser. They never pass
   `--user-data-dir`, run nothing else and take no arguments.
+- **Moved page** (`dashboard/moved.html`, published over the old
+  artifact URL): markup and style only, no script and no external assets;
+  its one link is the new artifact URL, opened with
+  `rel="noopener noreferrer"`.
 
 ## The PC hub (removed)
 
