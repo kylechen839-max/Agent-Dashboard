@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Coordinator heartbeat: an hourly workflow posts a passing check on the open claude/heartbeat PR, which wakes the coordinator session so it re-arms its dashboard watch after its container was recycled. Close that PR to stop it.
 - Fixed: after a reload every chat opened at its oldest message. Each
   transcript now opens at its newest message and stays pinned there
   until you scroll up, also when the window is resized or maximized.

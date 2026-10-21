@@ -1,0 +1,33 @@
+name: coordinator-heartbeat
+
+# Once an hour, post a passing check run on the open `claude/heartbeat` PR.
+# The coordinator session is subscribed to that PR, so the check wakes it
+# even after its container was recycled; on each wake it re-arms its
+# dashboard watch and answers any chat message a dropped wake left unread.
+# Close that PR to stop the heartbeat.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  pull-requests: read
+
+jobs:
+  beat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Post the heartbeat check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          sha=$(gh pr list -R "$REPO" --head claude/heartbeat --state open --json headRefOid --jq '.[0].headRefOid // empty')
+          if [ -z "$sha" ]; then echo "No open claude/heartbeat PR; nothing to wake."; exit 0; fi
+          gh api -X POST "repos/$REPO/check-runs" \
+            -f name=coordinator-heartbeat -f head_sha="$sha" \
+            -f status=completed -f conclusion=success \
+            -f "output[title]=Heartbeat" \
+            -f "output[summary]=Wakes the coordinator session so it re-arms its dashboard watch."
