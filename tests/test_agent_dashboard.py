@@ -199,7 +199,7 @@ def test_watchdog_prompt_is_one_fenced_block():
 
 # ---- Grid (workspace), the coordinator chat and desktop launchers ----
 
-DASHBOARD_URL = "https://claude.ai/artifact/CpPTyJkkHZ7CK8jsPYZq4G"
+DASHBOARD_URL = "https://claude.ai/artifact/BWYCUWxJxBvG6MJvnsaqvn"
 DESKTOP = DASH / "desktop"
 MANIFEST = '{"db":{}, "user":{}, "comments":{}, "downloads":true, "assets":{}}'
 
@@ -535,3 +535,44 @@ def test_paths_point_into_this_repo():
         text = path.read_text(encoding="utf-8")
         assert "tools/agent-dashboard" not in text, path
         assert "tools\\agent-dashboard" not in text, path
+
+
+# ---- The move to a new artifact URL ----
+
+OLD_ARTIFACT_ID = "CpPTyJkkHZ7CK8jsPYZq4G"
+
+
+def test_old_artifact_id_is_gone():
+    """The old artifact stopped waking the coordinator; only the changelog
+    history may still name it."""
+    for path in ROOT.rglob("*"):
+        parts = set(path.relative_to(ROOT).parts)
+        if (not path.is_file() or parts & {".git", ".venv", "node_modules", "__pycache__", ".pytest_cache"}
+                or path.name == "CHANGELOG.md"):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if path.name == "test_agent_dashboard.py":
+            text = text.replace(f'OLD_ARTIFACT_ID = "{OLD_ARTIFACT_ID}"', "")
+        assert OLD_ARTIFACT_ID not in text, path
+
+
+def test_moved_page_points_to_the_new_dashboard():
+    page = (DASH / "moved.html").read_text(encoding="utf-8")
+    assert page.startswith("<title>Agent Runs (moved)</title>\n")
+    lowered = page.lower()
+    # No script, no document tags (claude.ai wraps it), no external assets.
+    for banned in ("<script", "<html", "<head", "<body", "<link", "<img", "@import", "url(", "javascript:"):
+        assert banned not in lowered, banned
+    assert not re.search(r"<[^>]*\son[a-z]+\s*=", lowered)
+    assert "The agent dashboard has moved" in page
+    assert "Update your desktop launcher: open the new dashboard, ⋯ menu → Get desktop app." in page
+    links = re.findall(r"<a\b[^>]*>", page)
+    assert links == [f'<a href="{DASHBOARD_URL}" target="_blank" rel="noopener noreferrer">']
+    assert set(re.findall(r"https?://[^\s\"'<>)]+", page)) == {DASHBOARD_URL}
+    # Light and dark, with both dark selectors (system and explicit).
+    assert ":root{" in page
+    assert '@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){' in page
+    assert ':root[data-theme="dark"]{' in page
