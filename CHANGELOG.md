@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Dashboard redesign: one calm card look in both themes (no dark terminal
+  body); a ⋯ menu at the top right with Close idle, Auto-close, Reset
+  layout and Get desktop app; window controls that show on hover or
+  focus; a one-line coordinator summary with a History fold for status
+  lines and the run id; Claude-app style chat with small delivery icons
+  (✓, ✓✓) whose tooltip has the full text; presence carries the working
+  step.
 - Grid: a "Claude listening" / "No Claude session listening" pill in the
   toolbar (any session watching the dashboard, re-checked on show, focus,
   visibility and at most once a minute). With no session watching, every

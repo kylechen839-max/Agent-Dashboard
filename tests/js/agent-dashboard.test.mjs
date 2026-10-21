@@ -199,6 +199,7 @@ const PAGE_IDS = {
   'getapp-dash-win': 'button', 'getapp-dash-mac': 'button',
   'grid-close-idle': 'button', 'grid-autoclose': 'button',
   'grid-listen': 'p', 'grid-waiting': 'button', 'grid-keys': 'div', 'grid-keys-btn': 'button', 'grid-keys-close': 'button',
+  'app-more': 'details', 'app-more-sum': 'summary',
 };
 
 function memStorage(initial = {}) {
@@ -3739,4 +3740,188 @@ test('search: Esc anywhere in its window closes it before the help or a maximize
   assert.equal(page.ids.coords.dataset.max, '');
   keydown(page, 'Escape');
   assert.equal(page.ids.coords.dataset.max, undefined, 'the next Esc restores');
+});
+
+// ---- the redesign: History, the meta line, the delivery line's title and the ⋯ menu ----
+
+const histOf = (panel) => byClass(panel, 'history')[0];
+
+test('history: the summary shows the newest status line and the count; the body holds every line and the run id; it stays open', async () => {
+  const page = await gridPage();
+  const at = (m) => iso(NOW - m * MIN);
+  const two = [{ at: at(30), text: 'Started' }, { at: at(10), text: 'Building round 1' }];
+  runSnap(page, [runRow({ status_lines: two })]);
+  const [panel] = panels(page);
+  const h = histOf(panel);
+  assert.equal(h.tagName, 'DETAILS');
+  const coordBody = byClass(panel, 'coord-body')[0];
+  assert.deepEqual(coordBody.children.map((e) => e.className), ['coord-meta', 'history'], 'the meta line, then History');
+  const sum = h.children[0];
+  assert.equal(sum.tagName, 'SUMMARY');
+  assert.equal(byClass(sum, 'history-last')[0].textContent, 'Building round 1');
+  assert.equal(byClass(sum, 'history-count')[0].textContent, 'History (2)');
+  assert.match(byClass(sum, 'at')[0].textContent, /\d/);
+  assert.equal(byClass(sum, 'at')[0].hidden, false);
+  assert.equal(sum.title, 'Building round 1', 'the ellipsized line is in the title too');
+  const body = byClass(h, 'history-body')[0];
+  assert.deepEqual(byClass(body, 'lines')[0].children.map((li) => li.children[1].textContent), ['Started', 'Building round 1']);
+  assert.equal(byClass(body, 'runid')[0].textContent, `run ${RUN}`);
+  // Kyle opens it; the next snapshot updates it in place and it stays open.
+  h.open = true;
+  runSnap(page, [runRow({ status_lines: [...two, { at: at(2), text: 'Judging <b>now</b>' }] })]);
+  assert.equal(histOf(panels(page)[0]), h, 'the same element, never rebuilt');
+  assert.equal(h.open, true, 'still open');
+  assert.equal(byClass(panel, 'history').length, 1, 'appended once');
+  assert.equal(byClass(h, 'history-count')[0].textContent, 'History (3)');
+  assert.equal(byClass(h, 'history-last')[0].textContent, 'Judging <b>now</b>');
+  assert.equal(panel.find((e) => e.tagName === 'B').length, 0, 'text stays text');
+  // No status lines: "Details", holding only the run id.
+  runSnap(page, [runRow()]);
+  assert.equal(byClass(h, 'history-last')[0].textContent, 'No status lines yet');
+  assert.equal(byClass(h, 'history-count')[0].textContent, 'Details');
+  assert.equal(byClass(sum, 'at')[0].hidden, true);
+  assert.equal(sum.title, '');
+  assert.equal(byClass(h, 'lines').length, 0);
+  assert.deepEqual(byClass(h, 'history-body')[0].children.map((e) => e.textContent), [`run ${RUN}`]);
+  assert.equal(h.open, true);
+});
+
+test('meta line: one run row reads phase · elapsed with its blocker after; several rows go one per line (data-multi)', async () => {
+  const page = await gridPage();
+  runSnap(page, [runRow({ phase: 'blocked', blocker: 'Needs a key' })]);
+  const meta = byClass(panels(page)[0], 'coord-meta')[0];
+  assert.equal(meta.dataset.multi, undefined);
+  assert.deepEqual(meta.children.map((e) => [e.className, e.textContent]), [
+    ['when', 'blocked · updated 5 min ago'], ['when', 'elapsed 1 h 20 min'], ['blocker', 'Needs a key']]);
+  runSnap(page, [runRow({ phase: 'blocked', blocker: 'Needs a key' }),
+    runRow({ _docId: `${RUN}-ui`, feature: 'UI', phase: 'building' })]);
+  assert.equal(meta.dataset.multi, '');
+  assert.deepEqual(meta.children.map((e) => [e.className, e.textContent]), [
+    ['when', 'Voice speed: blocked · updated 5 min ago'], ['blocker', 'Needs a key'],
+    ['when', 'UI: building · round 1 · updated 5 min ago'], ['when', 'elapsed 1 h 20 min']]);
+  runSnap(page, [runRow()]);
+  assert.equal(meta.dataset.multi, undefined, 'back to one line');
+});
+
+test('delivery: the line\'s title carries its full text and time (the line shows an icon or a clipped line)', async () => {
+  const page = await chatPage();
+  let finish;
+  page.comments.replies.push(() => new Promise((resolve) => { finish = resolve; }));
+  const c = chatOf(page);
+  type(c, 'status?');
+  c.send.click();
+  await settle();
+  assert.equal(dline(page).title, 'Sending…');
+  finish({ threadId: 't1', commentId: 'c1' });
+  await settle();
+  assert.equal(dline(page).title, 'Delivered');
+  const nonce = /#([a-z0-9]{6})\]/.exec(sentText(page))[1];
+  statusSnap(page, { status: { state: 'idle', seen_ref: nonce, at: iso(NOW + 1000) } });
+  const seenAt = byClass(dline(page), 'dtime')[0].textContent;
+  assert.match(seenAt, /\d/);
+  assert.equal(dline(page).title, `Seen by coordinator · ${seenAt}`);
+  statusSnap(page, { status: { state: 'working', text: 'Reading your message', seen_ref: nonce, at: iso(NOW - 3 * MIN) } });
+  assert.equal(dline(page).title, 'Coordinator · working: Reading your message · 3m');
+});
+
+test('⋯ menu: Esc closes it first (in both views) and focuses its button; Close idle and Reset close it; a press outside closes it and Hidden', async () => {
+  const page = await idlePage();
+  const more = page.ids['app-more'];
+  const sum = page.ids['app-more-sum'];
+  // Esc: the menu before the help and before a maximized window.
+  byClass(tile(page, C0), 'max')[0].click();
+  page.ids['grid-keys-btn'].click();
+  more.open = true;
+  assert.equal(keydown(page, 'Escape').defaultPrevented, true);
+  assert.equal(more.open, false);
+  assert.equal(sum.focused, 1, 'focus back on ⋯');
+  assert.equal(page.ids['grid-keys'].hidden, false, 'the help is still open');
+  assert.equal(page.ids.coords.dataset.max, '', 'still maximized');
+  keydown(page, 'Escape');
+  assert.equal(page.ids['grid-keys'].hidden, true, 'the next Esc closes the help');
+  keydown(page, 'Escape');
+  assert.equal(page.ids.coords.dataset.max, undefined, 'then restores');
+  // Close idle agents does its job and closes the menu.
+  more.open = true;
+  closeIdleBtn(page).click();
+  assert.equal(more.open, false);
+  assert.equal(page.ids['grid-live'].textContent, 'Closed 3 idle agent windows.');
+  // Reset layout too, with focus back on ⋯.
+  more.open = true;
+  page.ids['grid-reset'].click();
+  assert.equal(more.open, false);
+  assert.equal(sum.focused, 2);
+  assert.match(page.ids['grid-live'].textContent, /^Layout reset/);
+  // Auto-close is a toggle: the menu stays open to show its ✓.
+  more.open = true;
+  page.ids['grid-autoclose'].click();
+  assert.equal(more.open, true);
+  assert.equal(page.ids['grid-autoclose'].getAttribute('aria-pressed'), 'true');
+  // A press inside a menu keeps it; one outside closes the ⋯ menu and Hidden.
+  more.append(sum);
+  page.ids['grid-tray'].append(page.ids['grid-tray-sum']);
+  page.ids['grid-tray'].open = true;
+  page.doc('pointerdown', { target: sum });
+  assert.equal(more.open, true);
+  assert.equal(page.ids['grid-tray'].open, false, 'a press in the ⋯ menu is outside Hidden');
+  page.ids['grid-tray'].open = true;
+  page.doc('pointerdown', { target: page.ids['grid-tray-sum'] });
+  assert.equal(page.ids['grid-tray'].open, true);
+  assert.equal(more.open, false);
+  more.open = true;
+  page.doc('pointerdown', { target: page.ids.coords });
+  assert.equal(more.open, false);
+  assert.equal(page.ids['grid-tray'].open, false);
+  // On Runs (Get desktop app lives there too) Esc still closes it.
+  page.ids['view-runs'].click();
+  more.open = true;
+  assert.equal(keydown(page, 'Escape').defaultPrevented, true);
+  assert.equal(more.open, false);
+  assert.equal(sum.focused, 3);
+  assert.equal(keydown(page, 'Escape').defaultPrevented, false, 'nothing else to close on Runs');
+});
+
+test('no watcher: the banner is one line, so its full text is also its title', async () => {
+  const page = await chatPage({ comments: fakeComments({ can: 'no_session' }) });
+  const { banner } = chatOf(page);
+  assert.equal(banner.hidden, false);
+  const text = byClass(banner, 'nowatch-text')[0].textContent;
+  assert.match(text, /^No coordinator is watching this dashboard right now/);
+  assert.equal(banner.title, text);
+});
+
+test('history: opening it keeps a transcript that was at the bottom pinned there; one scrolled up stays put', async () => {
+  const page = await chatPage();
+  chatSnap(page, [mirror('m2', { text: 'beta' }), mirror('m1', { text: 'alpha', at: iso(NOW - 2 * MIN) })]);
+  const c = chatOf(page);
+  const h = histOf(c.panel);
+  const sum = h.children[0];
+  // At the bottom: the press reads that, then History opens and the log shrinks.
+  c.log.scrollHeight = 600;
+  c.log.clientHeight = 200;
+  c.log.scrollTop = 400;
+  sum.dispatch('pointerdown');
+  h.open = true;
+  c.log.clientHeight = 120;  // History took room: 80 px of new messages are now below
+  c.pill.hidden = false;
+  h.dispatch('toggle');
+  assert.equal(c.log.scrollTop, 600, 're-pinned to the bottom');
+  assert.equal(c.pill.hidden, true);
+  // By keyboard too (Enter on the summary), closing it.
+  c.log.scrollTop = 480;
+  sum.dispatch('keydown', { key: 'Enter' });
+  h.open = false;
+  c.log.scrollHeight = 700;
+  h.dispatch('toggle');
+  assert.equal(c.log.scrollTop, 700);
+  // Scrolled up: Kyle is reading older messages, so the view stays where it is.
+  c.log.scrollTop = 100;
+  sum.dispatch('pointerdown');
+  h.open = true;
+  h.dispatch('toggle');
+  assert.equal(c.log.scrollTop, 100);
+  // A toggle with no press first (the page never opens it itself) does nothing.
+  c.log.scrollTop = 580;
+  h.dispatch('toggle');
+  assert.equal(c.log.scrollTop, 580);
 });

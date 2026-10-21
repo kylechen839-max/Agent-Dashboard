@@ -14,118 +14,173 @@
    coordinator's private mirror of the conversation from Kyle's own
    data/users/<id>/ subtree. Window order and size are kept per viewer in
    localStorage. */
+/* ---- tokens: one set, warm neutrals, every text pair AA (muted 5:1 or
+   better). The -edge colours are decorative: state is always text too. ---- */
 :root{
-  --bg:#f3f4f6;--card:#ffffff;--fg:#15181d;--muted:#5a636e;--line:#dde1e6;--accent:#2a5bc4;
-  --needs:#8f5200;--needs-bg:#fdf0d8;--needs-edge:#d48a12;
-  --silent:#a8261d;--silent-bg:#fbe4e1;--silent-edge:#d8443a;
-  --run:#14655a;--run-bg:#dff1ec;--run-edge:#2a9a87;
-  --done:#5d6672;--done-bg:#eaecef;--done-edge:#b5bcc5;
-  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  color-scheme:light
-}
+  --body:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  --bg:#f6f5f2;--card:#ffffff;--surface-2:#efede9;--hover:#e9e7e2;
+  --fg:#1d1c1a;--muted:#64605a;--line:#e4e1db;
+  --accent:#2f5bd0;--accent-soft:#e9effc;--on-accent:#ffffff;--spark:#d97757;
+  --run:#17704f;--run-bg:#e3f3ec;--run-edge:#2f9e75;
+  --needs:#8a5300;--needs-bg:#fbf0da;--needs-edge:#c98512;
+  --silent:#b3261e;--silent-bg:#fcebe9;--silent-edge:#e5483b;
+  --done:#5f5b55;--done-bg:#efede9;--done-edge:#c9c5be;
+  --shadow-1:0 0 0 1px rgba(28,25,23,.06),0 1px 2px rgba(28,25,23,.05);
+  --shadow-2:0 0 0 1px rgba(28,25,23,.07),0 2px 4px rgba(28,25,23,.05),0 10px 24px -12px rgba(28,25,23,.18);
+  --shadow-pop:0 0 0 1px rgba(28,25,23,.08),0 12px 32px -8px rgba(28,25,23,.22);
+  --r-sm:6px;--r-md:8px;--r-lg:10px;--r-xl:14px;--r-pill:999px;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:20px;--s6:24px;--s7:32px;
+  --ease:cubic-bezier(.2,0,0,1);--t-fast:120ms;--t-med:180ms;
+  color-scheme:light}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#101317;--card:#181c21;--fg:#e5e8ec;--muted:#98a1ac;--line:#2a3038;--accent:#8db0f6;
-  --needs:#f2b65c;--needs-bg:#36270f;--needs-edge:#d9952c;
-  --silent:#ff8a7d;--silent-bg:#3a1916;--silent-edge:#e2574b;
-  --run:#68d0bd;--run-bg:#122e29;--run-edge:#3aa894;
-  --done:#9aa3ae;--done-bg:#23282e;--done-edge:#4a525c;
+  --bg:#191817;--card:#22211f;--surface-2:#2b2a27;--hover:#33312e;
+  --fg:#ecebe8;--muted:#a8a39b;--line:#363431;
+  --accent:#8eaefc;--accent-soft:#1f2a44;--on-accent:#111318;--spark:#e08a6c;
+  --run:#5ccf9f;--run-bg:#15302a;--run-edge:#3fb488;
+  --needs:#f0b65a;--needs-bg:#3a2a10;--needs-edge:#d9952c;
+  --silent:#ff8f84;--silent-bg:#3d1b18;--silent-edge:#e2574b;
+  --done:#a8a39b;--done-bg:#2b2a27;--done-edge:#4a4743;
+  --shadow-1:0 0 0 1px rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.4);
+  --shadow-2:0 0 0 1px rgba(255,255,255,.09),0 10px 28px -12px rgba(0,0,0,.7);
+  --shadow-pop:0 0 0 1px rgba(255,255,255,.08),0 16px 40px -10px rgba(0,0,0,.75);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#101317;--card:#181c21;--fg:#e5e8ec;--muted:#98a1ac;--line:#2a3038;--accent:#8db0f6;
-  --needs:#f2b65c;--needs-bg:#36270f;--needs-edge:#d9952c;
-  --silent:#ff8a7d;--silent-bg:#3a1916;--silent-edge:#e2574b;
-  --run:#68d0bd;--run-bg:#122e29;--run-edge:#3aa894;
-  --done:#9aa3ae;--done-bg:#23282e;--done-edge:#4a525c;
+  --bg:#191817;--card:#22211f;--surface-2:#2b2a27;--hover:#33312e;
+  --fg:#ecebe8;--muted:#a8a39b;--line:#363431;
+  --accent:#8eaefc;--accent-soft:#1f2a44;--on-accent:#111318;--spark:#e08a6c;
+  --run:#5ccf9f;--run-bg:#15302a;--run-edge:#3fb488;
+  --needs:#f0b65a;--needs-bg:#3a2a10;--needs-edge:#d9952c;
+  --silent:#ff8f84;--silent-bg:#3d1b18;--silent-edge:#e2574b;
+  --done:#a8a39b;--done-bg:#2b2a27;--done-edge:#4a4743;
+  --shadow-1:0 0 0 1px rgba(255,255,255,.06),0 1px 2px rgba(0,0,0,.4);
+  --shadow-2:0 0 0 1px rgba(255,255,255,.09),0 10px 28px -12px rgba(0,0,0,.7);
+  --shadow-pop:0 0 0 1px rgba(255,255,255,.08),0 16px 40px -10px rgba(0,0,0,.75);
   color-scheme:dark}
+/* ---- base ---- */
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.4;
-  -webkit-text-size-adjust:100%;padding:20px 16px 24px}
-main{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-header{display:flex;flex-direction:column;gap:4px}
-h1{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0}
-#summary{font-size:1.35rem;font-weight:650;margin:0;font-variant-numeric:tabular-nums}
-#conn{font-size:.85rem;color:var(--muted);margin:0;font-variant-numeric:tabular-nums}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45;
+  -webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;padding:20px 16px 24px}
+main{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,p{margin:0}
+h1{font-size:12px;font-weight:500;color:var(--muted)}
+h2{font-size:15px;font-weight:600;line-height:1.3;overflow-wrap:anywhere;min-width:0}
+header{display:flex;flex-direction:column;gap:2px}
+#summary,#grid-summary{font-size:22px;font-weight:600;letter-spacing:-.015em;line-height:1.25;font-variant-numeric:tabular-nums}
+#conn{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 #conn[data-level="bad"]{color:var(--silent)}
-ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
-li.run{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--done-edge);border-radius:10px;
-  padding:11px 13px 12px;display:flex;flex-direction:column;gap:5px;min-width:0}
-li.run[data-state="needs"]{border-left-color:var(--needs-edge)}
-li.run[data-state="silent"]{border-left-color:var(--silent-edge)}
-li.run[data-state="running"]{border-left-color:var(--run-edge)}
-.top{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}
-h2{font-size:1rem;font-weight:600;margin:0;overflow-wrap:anywhere;min-width:0}
-.pill{flex:none;font-size:.75rem;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap;
-  color:var(--done);background:var(--done-bg)}
+ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:12px}
+a{color:var(--accent);text-decoration:none;border-radius:4px}
+a:hover{text-decoration:underline}
+button{font:inherit;font-size:13px;font-weight:500;border:0;border-radius:var(--r-md);padding:5px 12px;cursor:pointer;
+  color:var(--muted);background:transparent}
+button:disabled{cursor:default;opacity:.45}
+summary{cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+:is(button,a,summary,select,input,textarea,[tabindex]):focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+section[hidden]{display:none}
+footer{font-size:12px;color:var(--muted)}
+#empty{color:var(--muted)}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* ---- app bar: the view switch and the ⋯ menu ---- */
+.appbar{display:flex;align-items:center;gap:8px}
+nav,.seg{display:flex;gap:2px;padding:3px;background:var(--surface-2);border-radius:var(--r-lg)}
+nav button,.seg button{padding:4px 12px;border-radius:7px}
+nav button[aria-pressed="true"],.seg button[aria-pressed="true"]{color:var(--fg);background:var(--card);box-shadow:var(--shadow-1)}
+:is(nav,.seg) button:not([aria-pressed="true"]):hover{color:var(--fg)}
+.more{position:relative;margin-left:auto}
+.more>summary{display:grid;place-items:center;width:32px;height:32px;border-radius:var(--r-md);font-size:18px;line-height:1;color:var(--muted)}
+.more>summary:hover,.more[open]>summary{color:var(--fg);background:var(--hover)}
+main[data-view="runs"] .more-grid{display:none}
+main[data-view="runs"] #app-more:has(#getapp[hidden]){display:none}
+.more-pop,.tray-pop{position:absolute;z-index:8;top:calc(100% + 6px);right:0;display:flex;flex-direction:column;gap:2px;padding:6px;
+  background:var(--card);border-radius:var(--r-xl);box-shadow:var(--shadow-pop)}
+.more-pop{width:250px}
+.more-grid{display:flex;flex-direction:column;gap:2px}
+:is(.more-pop,.tray-pop) button{display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0 10px;
+  font-size:13.5px;font-weight:400;text-align:left;color:var(--fg);border-radius:var(--r-md)}
+:is(.more-pop,.tray-pop) button:not(:disabled):hover{background:var(--hover)}
+#grid-autoclose[aria-pressed="true"]::after{content:"✓";margin-left:auto;color:var(--accent);font-weight:600}
+#getapp{display:flex;flex-direction:column;gap:2px}
+.more-grid+#getapp{margin-top:4px;padding-top:4px;border-top:1px solid var(--line)}
+main[data-view="runs"] .more-grid+#getapp{margin-top:0;padding-top:0;border-top:0}
+#getapp-menu{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:2px 4px 4px}
+#getapp-menu p{grid-column:1/-1;padding:2px 6px;font-size:12px;color:var(--muted)}
+#getapp-menu button{justify-content:center;background:var(--surface-2)}
+#getapp-hint{padding:4px 10px 6px;font-size:12px;color:var(--muted)}
+/* ---- Runs: soft cards with a slim state edge ---- */
+li.run{background:var(--card);border-radius:var(--r-xl);padding:14px 16px 14px 19px;display:flex;flex-direction:column;gap:6px;min-width:0;
+  box-shadow:inset 3px 0 0 var(--done-edge),var(--shadow-1)}
+li.run[data-state="needs"]{box-shadow:inset 3px 0 0 var(--needs-edge),var(--shadow-1)}
+li.run[data-state="silent"]{box-shadow:inset 3px 0 0 var(--silent-edge),var(--shadow-1)}
+li.run[data-state="running"]{box-shadow:inset 3px 0 0 var(--run-edge),var(--shadow-1)}
+.top{display:flex;align-items:flex-start;gap:12px;justify-content:space-between}
+li.run h2{font-size:15px;padding-top:1px}
+.pill,.badge,.qchip{flex:none;height:22px;padding:0 9px;border-radius:var(--r-pill);font-size:12px;font-weight:500;line-height:22px;
+  white-space:nowrap;color:var(--done);background:var(--done-bg)}
+.pill{position:relative;display:block}
+.pill::first-letter,.qchip::first-letter,.badge .label::first-letter{text-transform:uppercase}
 [data-state="needs"] .pill{color:var(--needs);background:var(--needs-bg)}
 [data-state="silent"] .pill{color:var(--silent);background:var(--silent-bg)}
-[data-state="running"] .pill{color:var(--run);background:var(--run-bg)}
-[data-state="running"] .pill::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
-  background:currentColor;margin-right:6px;vertical-align:1px;animation:pulse 2.4s ease-in-out infinite}
+[data-state="running"] .pill{padding-left:21px;color:var(--run);background:var(--run-bg)}
+[data-state="running"] .pill::before{content:"";position:absolute;left:9px;top:8px;width:6px;height:6px;border-radius:50%;
+  background:currentColor;animation:pulse 2.4s ease-in-out infinite}
 @keyframes pulse{50%{opacity:.25}}
 @media (prefers-reduced-motion: reduce){[data-state="running"] .pill::before{animation:none}}
-.when{font-size:.88rem;color:var(--muted);margin:0;font-variant-numeric:tabular-nums}
+.when{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
 [data-state="silent"] .when{color:var(--silent)}
-.branch{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin:0;overflow-wrap:anywhere}
-dl{display:flex;flex-wrap:wrap;gap:2px 14px;margin:0;font-size:.82rem;font-variant-numeric:tabular-nums}
+.branch{font-family:var(--mono);font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+dl{display:flex;flex-wrap:wrap;gap:2px 16px;margin:0;font-size:12.5px;font-variant-numeric:tabular-nums}
 dl div{display:flex;gap:4px;min-width:0}
 dt{color:var(--muted)}
 dd{margin:0;overflow-wrap:anywhere}
-.blocker{font-size:.88rem;margin:0;color:var(--needs);overflow-wrap:anywhere}
-[data-state="silent"] .blocker{color:var(--silent)}
-.links{display:flex;gap:16px;font-size:.88rem}
-a{color:var(--accent);text-decoration:none;border-radius:4px}
-a:hover{text-decoration:underline}
-a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#empty{color:var(--muted);margin:8px 0 0}
-footer{font-size:.78rem;color:var(--muted);margin-top:6px}
-section{display:flex;flex-direction:column;gap:14px;min-width:0}
-section[hidden]{display:none}
-nav{display:flex;gap:4px;padding:3px;align-self:flex-start;background:var(--done-bg);border-radius:9px}
-button{font:inherit;font-size:.85rem;font-weight:600;border:0;border-radius:7px;padding:5px 14px;cursor:pointer;
-  color:var(--muted);background:transparent}
-nav button[aria-pressed="true"]{color:var(--fg);background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.14)}
-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-button:disabled{cursor:default;opacity:.6}
+.blocker{align-self:flex-start;max-width:100%;padding:6px 10px;border-radius:var(--r-md);font-size:13px;
+  color:var(--needs);background:var(--needs-bg);overflow-wrap:anywhere}
+[data-state="silent"] .blocker{color:var(--silent);background:var(--silent-bg)}
+.links{display:flex;gap:16px;font-size:13px}
+/* ---- Grid: head and toolbar. The page itself never scrolls; the
+   workspace scrolls in its frame. ---- */
 main[data-view="grid"]{max-width:none}
-[hidden]{display:none!important}
-/* Grid: the page itself never scrolls; the workspace scrolls in its frame. */
 body:has(> main[data-view="grid"]){height:100dvh;overflow:hidden}
-main[data-view="grid"]{height:100%;gap:10px}
-#grid-view{flex:1;min-height:0;gap:10px}
+main[data-view="grid"]{height:100%;gap:12px}
+#grid-view{flex:1;min-height:0;gap:12px}
 #grid-head{flex:none}
-#grid-summary{font-size:1.35rem;font-weight:650;margin:0;font-variant-numeric:tabular-nums}
-#grid-conn,#grid-hidden,#grid-count{font-size:.85rem;color:var(--muted);margin:0;font-variant-numeric:tabular-nums}
-#grid-conn[data-level="bad"]{color:var(--silent)}
-.toolbar{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;min-width:0}
-.seg{display:flex;gap:2px;padding:2px;background:var(--done-bg);border-radius:8px}
-.seg button{padding:3px 11px;font-size:.8rem}
-.seg button[aria-pressed="true"]{color:var(--fg);background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.14)}
-#grid-reset{margin-left:auto;color:var(--accent);background:var(--card);border:1px solid var(--line);font-size:.8rem;padding:3px 11px}
-#grid-view>footer{flex:none;margin:0}
-/* Coordinator picker: one session's windows, or All. */
-#grid-coord-label{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
-#grid-coord{max-width:22em;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:2px 6px}
-#grid-coord-note{font-size:.8rem;color:var(--muted);margin:0}
-/* "Get desktop app": the launcher chooser (its own small block). */
-#getapp{position:fixed;top:14px;right:16px;z-index:6;display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:340px;font-size:.8rem}
-#getapp-btn{color:var(--accent);background:var(--card);border:1px solid var(--line);padding:3px 11px}
-#getapp-menu{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:8px;background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
-#getapp-menu p{grid-column:1/-1;margin:2px 0 0;color:var(--muted)}
-#getapp-menu button{border:1px solid var(--line);padding:3px 10px}
-#getapp-hint{margin:0;padding:4px 8px;color:var(--muted);background:var(--card);border-radius:7px;text-align:right}
-/* Hidden windows: the toolbar's "Hidden (N)" menu. */
-#grid-tray{position:relative;font-size:.8rem}
-#grid-tray>summary{cursor:pointer;list-style:none;color:var(--accent);background:var(--card);border:1px solid var(--line);border-radius:7px;padding:3px 11px}
-.tray-pop{position:absolute;z-index:5;top:calc(100% + 4px);left:0;min-width:230px;display:flex;flex-direction:column;gap:2px;padding:6px;
-  background:var(--card);border:1px solid var(--line);border-radius:9px;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.toolbar{position:relative;flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;min-width:0}
+.tb-spacer{flex:1 1 0;min-width:0}
+#grid-coord-label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+#grid-coord{height:30px;max-width:22em;padding:0 8px;font:inherit;font-size:13px;color:var(--fg);background:var(--surface-2);
+  border:0;border-radius:var(--r-md)}
+#grid-coord-note{font-size:12px;color:var(--muted)}
+#grid-coord-forget{padding:0;font-size:12px;color:var(--accent)}
+#grid-coord-forget:hover{text-decoration:underline}
+.waiting-badge,.listen-pill,#grid-tray>summary{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;
+  border-radius:var(--r-pill);font-size:12px;font-weight:500;white-space:nowrap}
+.waiting-badge{color:var(--needs);background:var(--needs-bg)}
+.listen-pill{color:var(--run);background:var(--run-bg)}
+.listen-pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.listen-pill[data-state="off"]{color:var(--needs);background:var(--needs-bg)}
+#grid-tray{position:relative}
+#grid-tray>summary{color:var(--fg);background:var(--surface-2)}
+#grid-tray>summary:hover,#grid-tray[open]>summary{background:var(--hover)}
+.tray-pop{min-width:250px}
 #grid-tray-list{display:flex;flex-direction:column;gap:2px}
-.tray-item,#grid-showall{display:flex;align-items:center;gap:8px;text-align:left;padding:5px 8px;font-size:.82rem}
 .tray-item .chip{background:var(--hue,var(--line))}
-.tray-mark{margin-left:auto;color:var(--needs)}
-#grid-showall{color:var(--accent);border-top:1px solid var(--line)}
-#coords{flex:1;min-height:0;overflow:auto;display:grid;gap:10px;grid-auto-rows:minmax(180px,1fr);grid-auto-flow:row dense;
-  grid-template-columns:repeat(1,minmax(0,1fr));min-width:0;padding:1px;overscroll-behavior:contain}
+.tray-mark{margin-left:auto;font-size:12px;color:var(--needs)}
+#grid-showall{color:var(--accent)}
+.tb-status{margin-left:auto;display:flex;align-items:center;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb-status>:empty{display:none}
+.tb-status>:not([hidden]):not(:empty)~:not([hidden]):not(:empty)::before{content:"·";margin:0 6px;color:var(--muted)}
+#grid-conn[data-level="bad"]{color:var(--silent)}
+.keys-btn{width:28px;height:28px;padding:0;border-radius:50%;color:var(--muted);background:var(--surface-2)}
+.keys-btn:hover,.keys-btn[aria-expanded="true"]{color:var(--fg);background:var(--hover)}
+#grid-view>footer{flex:none}
+#grid-foot{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:4px}
+#grid-foot:hover,#grid-foot:focus{white-space:normal}
+/* ---- the workspace ---- */
+#coords{flex:1;min-height:0;overflow:auto;display:grid;gap:12px;grid-auto-rows:minmax(180px,1fr);grid-auto-flow:row dense;
+  grid-template-columns:repeat(1,minmax(0,1fr));min-width:0;margin:-4px;padding:4px 4px 12px;overscroll-behavior:contain}
 #coords[data-cols="1"]{grid-template-columns:repeat(1,minmax(0,1fr))}
 #coords[data-cols="2"]{grid-template-columns:repeat(2,minmax(0,1fr))}
 #coords[data-cols="3"]{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -135,11 +190,12 @@ main[data-view="grid"]{height:100%;gap:10px}
 #coords[data-max]{display:flex;flex-direction:column}
 #coords[data-max]>.tile:not([data-max]){display:none}
 #coords[data-max]>.tile[data-max]{flex:1 1 auto}
-/* A window: a light title bar over a dark mono body, in both themes. */
+/* ---- a window: one card surface, a slim run colour on top ---- */
 .tile{position:relative;display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:var(--card);
-  border:1px solid var(--line);border-radius:9px;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.tile::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--hue,var(--line));z-index:1}
-.tile.coord{border-color:var(--hue,var(--line));box-shadow:0 0 0 1px var(--hue,var(--line)),0 1px 3px rgba(0,0,0,.12)}
+  border-radius:var(--r-xl);box-shadow:var(--shadow-1)}
+.tile:hover{box-shadow:var(--shadow-2)}
+.tile::before{content:"";position:absolute;left:0;right:0;top:0;height:2px;z-index:1;pointer-events:none;
+  background:color-mix(in srgb,var(--hue,var(--line)) 70%,transparent)}
 .tile[data-dragging]{opacity:.55}
 .tile[data-drop]{outline:2px dashed var(--accent);outline-offset:2px}
 .tile[data-cols="2"]{grid-column:span 2}.tile[data-cols="3"]{grid-column:span 3}.tile[data-rows="2"]{grid-row:span 2}
@@ -154,238 +210,226 @@ main[data-view="grid"]{height:100%;gap:10px}
 :root[data-theme="dark"] [data-hue="2"]{--hue:#a3e635}:root[data-theme="dark"] [data-hue="3"]{--hue:#fbbf24}
 :root[data-theme="dark"] [data-hue="4"]{--hue:#fb7185}:root[data-theme="dark"] [data-hue="5"]{--hue:#e879f9}
 :root[data-theme="dark"] [data-hue="6"]{--hue:#c4b5fd}:root[data-theme="dark"] [data-hue="7"]{--hue:#67e8f9}
-.tile-head{position:relative;flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:3px 7px;min-width:0;padding:7px 8px 6px 4px}
-.title{flex:1 1 7em;min-width:0;display:flex;flex-direction:column}
-.tile-head h2{font-size:.9rem;line-height:1.25}
-.coord .tile-head h2{font-size:1rem}
-.kicker{font-size:.68rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0}
-.chip{flex:none;width:10px;height:10px;border-radius:2px;background:var(--hue,var(--muted))}
-.round{flex:none;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.qchip{flex:none;font-size:.72rem;font-weight:700;padding:1px 8px;border-radius:999px;color:var(--needs);background:var(--needs-bg)}
-.wacts{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:.8rem}
-.wacts a{font-size:.8rem}
-.max{padding:1px 7px;font-size:.85rem;color:var(--muted);border:1px solid var(--line);background:var(--card)}
-.grip{flex:none;padding:2px 5px;color:var(--muted);cursor:grab;touch-action:none}
-.grip[aria-pressed="true"]{color:var(--accent);background:var(--done-bg)}
-.resize{position:absolute;right:2px;bottom:2px;z-index:2;width:22px;height:22px;padding:0;color:#9aa4b0;cursor:nwse-resize;
-  touch-action:none;font-size:.75rem;font-weight:400;line-height:22px;background:transparent}
-.badge{flex:none;display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:600;padding:2px 8px;
-  border-radius:999px;white-space:nowrap;color:var(--done);background:var(--done-bg)}
-.badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+/* Head: chip, title, question, badge, round; row 2 the links and buttons. */
+.tile-head{position:relative;flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;min-width:0;padding:12px 14px 6px}
+.title{flex:0 1 auto;min-width:0;display:flex;flex-direction:column}
+.tile-head h2{font-size:14px;line-height:1.3}
+.coord .tile-head h2{font-size:16px}
+/* One run row: its round is already in the meta line under the head. */
+.coord:has(.coord-meta:not([data-multi])) .tile-head>.round{display:none}
+.kicker{font-size:12px;font-weight:500;line-height:1.35;color:var(--muted)}
+.chip{flex:none;width:8px;height:8px;border-radius:2.5px;background:var(--hue,var(--muted))}
+.tile-head>.qchip{order:1}
+.tile-head>.badge{order:2}
+.tile-head>.round{order:3}
+.tile-head>.wacts{order:4}
+.qchip{display:block;color:var(--needs);background:var(--needs-bg)}
+.round{flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:6px}
+.badge .dot{flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
 .badge-running{color:var(--run);background:var(--run-bg)}
 .badge-running .dot{animation:pulse 2.4s ease-in-out infinite}
-.badge-done{color:var(--accent)}
+.badge-done{color:var(--accent);background:var(--accent-soft)}
 .badge-failed{color:var(--silent);background:var(--silent-bg)}
 .badge-silent{color:var(--needs);background:var(--needs-bg)}
 @media (prefers-reduced-motion: reduce){.badge-running .dot{animation:none}}
-.tile-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:5px;padding:8px 11px 12px;
-  background:#12161b;color:#d7dde4;font-family:var(--mono);font-size:.78rem;line-height:1.45;color-scheme:dark;
-  --fg:#d7dde4;--muted:#9aa4b0;--line:#2a3038;--card:#181c21;--accent:#8db0f6;
-  --needs:#f2b65c;--needs-bg:#36270f;--needs-edge:#d9952c;--silent:#ff8a7d;--silent-bg:#3a1916;--silent-edge:#e2574b;
-  --run:#68d0bd;--run-bg:#122e29;--run-edge:#3aa894;--done:#9aa3ae;--done-bg:#23282e;--done-edge:#4a525c}
-.tile-body .when,.tile-body .status,.tile-body .blocker{font-size:inherit}
-.coord-body{flex:0 1 auto;min-height:2.6em;max-height:45%;overflow:auto;display:flex;flex-direction:column;gap:4px;min-width:0}
-.tile[data-max] .coord-body,.tile[data-max] .runid{display:none}
-.runid{flex:none;font-family:var(--mono);font-size:.74rem;color:var(--muted);margin:0;overflow-wrap:anywhere}
-.lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.lines li{display:flex;gap:8px;min-width:0;overflow-wrap:anywhere}
-.lines .at{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
-.status{margin:0;overflow-wrap:anywhere}
-.hint{font-size:.76rem;color:var(--muted);margin:0}
+.tile-head>.wacts{flex:1 0 100%;display:flex;align-items:center;flex-wrap:wrap;gap:2px;min-height:26px;font-size:12px}
+.tile-head>.wacts>a,.wacts .wacts{margin-right:10px}
+.wacts .wacts{display:inline-flex;flex-wrap:wrap;gap:2px 10px}
+.max,.hide{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 6px;border-radius:7px;font-size:13px;
+  color:var(--muted);background:transparent}
+.tile-head>.wacts>button:first-of-type{margin-left:auto}
+:is(.max,.hide):hover{color:var(--fg);background:var(--hover)}
+.grip{position:absolute;top:0;left:50%;z-index:2;transform:translateX(-50%);height:14px;padding:0 10px;font-size:11px;line-height:14px;
+  color:var(--muted);cursor:grab;touch-action:none;border-radius:0 0 6px 6px}
+.grip:hover{color:var(--fg);background:var(--hover)}
+.grip[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
+.resize{position:absolute;right:3px;bottom:3px;z-index:2;width:20px;height:20px;padding:0;font-size:10px;font-weight:400;line-height:20px;
+  color:var(--muted);cursor:nwse-resize;touch-action:none;border-radius:var(--r-sm);background:transparent}
+.resize:hover{color:var(--fg);background:var(--hover)}
+/* Window controls show on hover or keyboard focus (always without hover). */
+.tile :is(.grip,.hide,.max,.resize){opacity:0}
+.tile:hover :is(.grip,.hide,.max,.resize),.tile:focus-within :is(.grip,.hide,.max,.resize),.tile[data-max] :is(.hide,.max),
+.tile .grip[aria-pressed="true"],.tile .chat-search-btn[aria-expanded="true"]{opacity:1}
+@media (hover:none){.tile :is(.grip,.hide,.max,.resize){opacity:1}}
+/* Body: the card itself, the page font. */
+.tile-body{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:0 14px 14px;
+  font-family:var(--body);font-size:14px;line-height:1.45}
+.status{font-size:13px;color:var(--fg);overflow-wrap:anywhere}
+.hint{font-size:12px;color:var(--muted)}
 .hint[data-level="bad"]{color:var(--silent)}
-/* The coordinator chat: transcript, then the box. */
-/* The coordinator chat: the Claude Code app's look, its own palette in both themes. */
-.chat{flex:1 1 150px;display:flex;flex-direction:column;gap:8px;min-height:150px;margin:4px -11px -12px;padding:10px 14px 12px;
-  font-family:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;font-size:15px;line-height:1.55;
-  background:#faf9f7;color:#1f1e1d;color-scheme:light;
-  --fg:#1f1e1d;--muted:#6b6660;--line:#e3dfd9;--card:#ffffff;--accent:#2a5bc4;--chip:#efece7;--bubble:#efece7;
-  --needs:#8f5200;--needs-bg:#fdf0d8;--needs-edge:#d48a12;--silent:#a8261d;--silent-bg:#fbe4e1;--run:#14655a}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chat{background:#1f1e1d;color:#e8e6e3;color-scheme:dark;
-  --fg:#e8e6e3;--muted:#a7a29b;--line:#3a3836;--card:#2a2927;--accent:#8db0f6;--chip:#2f2d2b;--bubble:#33312e;
-  --needs:#f2b65c;--needs-bg:#36270f;--needs-edge:#d9952c;--silent:#ff8a7d;--silent-bg:#3a1916;--run:#68d0bd}}
-:root[data-theme="dark"] .chat{background:#1f1e1d;color:#e8e6e3;color-scheme:dark;
-  --fg:#e8e6e3;--muted:#a7a29b;--line:#3a3836;--card:#2a2927;--accent:#8db0f6;--chip:#2f2d2b;--bubble:#33312e;
-  --needs:#f2b65c;--needs-bg:#36270f;--needs-edge:#d9952c;--silent:#ff8a7d;--silent-bg:#3a1916;--run:#68d0bd}
-.chat .hint{font-size:.8rem}
-.tile[data-max] .chat{margin-top:-8px}
-.logwrap{position:relative;flex:1;min-height:70px;display:flex}
-.log{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:2px 2px 6px;overscroll-behavior:contain}
-.log>.empty{color:var(--muted);margin:auto 0 0}
-.msg{min-width:0;overflow-wrap:anywhere}
+/* ---- agent windows: the role is the title; links and buttons on hover ---- */
+.agent .kicker{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.agent .tile-head .round{display:none}
+.agent .tile-head>.wacts{position:absolute;top:calc(100% - 2px);right:8px;z-index:3;flex:none;min-height:0;padding:2px 2px 2px 10px;
+  background:var(--card);border-radius:var(--r-md);box-shadow:var(--shadow-pop);opacity:0;pointer-events:none}
+.agent .tile-head>.wacts>button:first-of-type{margin-left:0}
+.agent:hover .tile-head>.wacts,.agent:focus-within .tile-head>.wacts,.agent[data-max] .tile-head>.wacts{opacity:1;pointer-events:auto}
+@media (hover:none){.agent .tile-head>.wacts{opacity:1;pointer-events:auto}}
+.agent .tile-body{gap:6px;padding-top:2px}
+.agent .tile-body .when{font-size:12px}
+/* ---- coordinator windows: one meta line, History, then the chat ---- */
+.coord-body{flex:none;max-height:34%;overflow:auto;display:flex;flex-direction:column;gap:8px;min-width:0}
+.coord-body :focus-visible{outline-offset:-2px}
+.coord-meta{font-size:12.5px;color:var(--muted)}
+.coord-meta>.when{display:inline;font-size:inherit}
+.coord-meta:not([data-multi])>.when+.when::before{content:" · "}
+.coord-meta[data-multi]>.when{display:block}
+.coord-meta>.blocker{display:table;margin:6px 0 2px}
+.coord-meta>.blocker+.when{margin-top:4px}
+.history{flex:none;border-radius:var(--r-md);background:var(--surface-2)}
+.history>summary{display:flex;align-items:baseline;gap:8px;min-width:0;padding:6px 10px;font-size:12.5px;border-radius:var(--r-md)}
+.history>summary:hover{background:var(--hover)}
+.history .at{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.history-last{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.history-count{flex:none;margin-left:auto;color:var(--muted);white-space:nowrap}
+.history-count::after{content:" ▸"}
+.history[open] .history-count::after{content:" ▾"}
+.history-body{display:flex;flex-direction:column;gap:8px;padding:2px 10px 10px}
+.lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.lines li{display:flex;gap:10px;min-width:0;overflow-wrap:anywhere}
+.runid{font-family:var(--mono);font-size:11.5px;color:var(--muted);overflow-wrap:anywhere}
+/* ---- the coordinator chat: the Claude app's look, on the card itself. The
+   meta line and History keep their height (an open History scrolls past
+   a third of the window); the transcript gives way, never the box. ---- */
+.chat{flex:1 1 140px;display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid var(--line);
+  font-size:14.5px;line-height:1.55}
+.tile[data-max] .tile-body>*{width:100%;max-width:860px;margin-inline:auto}
+.tile[data-max] .tile-head{padding-inline:max(14px,calc((100% - 860px) / 2))}
+.logwrap{position:relative;flex:1 1 70px;min-height:4.5em}
+.log{position:absolute;inset:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding:4px 2px 6px;overscroll-behavior:contain}
+.log>.empty{margin:auto 0 0;font-size:13px;color:var(--muted)}
+.msg{position:relative;min-width:0;overflow-wrap:anywhere}
 .msg[data-from="coordinator"]{align-self:stretch}
-.msg[data-from="kyle"]{align-self:flex-end;max-width:75%;padding:8px 13px;border-radius:18px;background:var(--bubble)}
-.msg[data-kind="question"]{border-left:3px solid var(--needs-edge);padding-left:10px}
-.msg .meta{display:flex;flex-wrap:wrap;gap:0 6px;font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.msg[data-from="coordinator"] .meta .at::before{content:"· "}
+.msg[data-from="kyle"]{align-self:flex-end;max-width:80%;padding:8px 14px;border-radius:18px 18px 6px 18px;background:var(--surface-2)}
+.msg[data-kind="question"]{padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--needs-bg) 70%,transparent);
+  box-shadow:inset 2px 0 0 var(--needs-edge)}
+.msg .meta{display:flex;flex-wrap:wrap;gap:0 6px;margin-bottom:2px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.msg[data-from="coordinator"]:not([data-kind="update"]) .meta .at::before{content:"· "}
+.msg[data-kind="update"] .meta .who{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .msg[data-from="kyle"] .meta{display:none}
-.msg[data-kind="question"] .who{color:var(--needs);font-weight:600}
+.msg[data-kind="question"] .who{color:var(--needs);font-weight:500}
 .msg .plain{white-space:pre-wrap}
-.act{display:flex;gap:7px;align-items:baseline;font-size:.82rem;color:var(--muted);min-width:0}
+.msg .plain blockquote{margin:0 0 4px;padding-left:10px;border-left:2px solid var(--line);color:var(--muted)}
+.act{display:flex;gap:8px;align-items:baseline;min-width:0;font-size:13px;color:var(--muted)}
 .act .icon{flex:none;width:1em;text-align:center}
 .act .atext{overflow-wrap:anywhere}
-.acts{display:flex;flex-direction:column;gap:3px}
-.acts-toggle{align-self:flex-start;padding:0;font-size:.82rem;font-weight:500;color:var(--muted);background:none}
-.acts-list{display:flex;flex-direction:column;gap:3px;padding-left:2px}
+.acts{display:flex;flex-direction:column;gap:4px}
+.acts-toggle{align-self:flex-start;padding:0;font-size:13px;color:var(--muted);background:none}
+.acts-toggle:hover{color:var(--fg)}
+.acts-list{display:flex;flex-direction:column;gap:4px;padding-left:2px}
 .md>*{margin:.55em 0 0}.md>:first-child{margin-top:.15em}
 .md h3,.md h4,.md h5,.md h6{font-weight:600;line-height:1.35}
-.md h3{font-size:1.15em}.md h4{font-size:1.08em}.md h5,.md h6{font-size:1.02em}
+.md h3{font-size:1.12em}.md h4{font-size:1.06em}.md h5,.md h6{font-size:1em}
 .md strong{font-weight:600}
 .md ul,.md ol{display:block;padding-left:1.6em}.md ul{list-style:disc}.md ol{list-style:decimal}.md li{display:list-item;margin:.15em 0}
 .md a{color:var(--accent);text-decoration:none}.md a:hover{text-decoration:underline}
-.md code{font-family:var(--mono);font-size:.86em;background:var(--chip);border-radius:5px;padding:.1em .35em}
-.md pre{position:relative;overflow-x:auto;font-family:var(--mono);font-size:.84em;line-height:1.5;background:var(--chip);
-  border:1px solid var(--line);border-radius:9px;padding:10px 12px;white-space:pre}
+.md code{font-family:var(--mono);font-size:11.5px;background:var(--surface-2);border-radius:5px;padding:.1em .35em}
+.md pre{position:relative;overflow-x:auto;font-family:var(--mono);font-size:11.5px;line-height:1.55;background:var(--surface-2);
+  border-radius:var(--r-lg);padding:10px 12px;white-space:pre}
 .md pre[data-lang]{padding-top:24px}
-.md pre[data-lang]::before{content:attr(data-lang);position:absolute;top:5px;left:12px;font-size:.78em;color:var(--muted);font-family:var(--body)}
+.md pre[data-lang]::before{content:attr(data-lang);position:absolute;top:5px;left:12px;font-size:11px;color:var(--muted);font-family:var(--body)}
 .md pre code{padding:0;background:none;font-size:inherit}
-.md blockquote{margin-left:0;padding-left:12px;border-left:3px solid var(--line);color:var(--muted)}
+.md blockquote{margin-left:0;padding-left:12px;border-left:2px solid var(--line);color:var(--muted)}
 .md .tablewrap{overflow-x:auto}
 .md table{border-collapse:collapse;font-size:.92em;color:inherit}
 .md th,.md td{border:1px solid var(--line);padding:4px 9px;text-align:left;vertical-align:top}
 .md th{font-weight:600}
 .md hr{border:0;border-top:1px solid var(--line)}
 .md-rest{white-space:pre-wrap}
-.newpill{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);padding:3px 12px;font-size:.74rem;color:#0b0e12;
-  background:var(--accent);border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.4)}
-.dline{align-self:flex-end;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;max-width:75%;margin-top:-8px;
-  font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
-.dline[data-stage="late"]{color:var(--needs)}
+.newpill,.replybtn{height:26px;padding:0 12px;font-size:12px;color:var(--on-accent);background:var(--accent);border-radius:var(--r-pill);
+  box-shadow:var(--shadow-pop)}
+.newpill{position:absolute;left:50%;bottom:8px;transform:translateX(-50%)}
+.replybtn{position:absolute;top:-13px;right:6px;z-index:2;height:24px;padding:0 10px}
+/* The delivery line: a small icon (title: the full text); a problem wraps in full. */
+.dline{align-self:flex-end;display:flex;align-items:baseline;gap:2px 6px;max-width:80%;min-width:0;margin-top:-8px;
+  font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.dline .dtext{min-width:0}
+.dline:is([data-stage="sending"],[data-stage="working"],[data-stage="queued"]) .dtext{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dline:is([data-stage="late"],[data-stage="posted"],[data-stage="failed"]){flex-wrap:wrap}
+.dline:is([data-stage="delivered"],[data-stage="seen"]) .dtext{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.dline[data-stage="delivered"]::before{content:"✓"}
+.dline[data-stage="seen"]::before{content:"✓✓";letter-spacing:-.2em;margin-right:.2em;color:var(--accent)}
+.dline[data-stage="late"],.dline[data-stage="posted"]{color:var(--needs)}
 .dline[data-stage="failed"]{color:var(--silent)}
-.presence{flex:none;align-self:flex-start;display:flex;align-items:baseline;gap:6px;max-width:100%;padding:2px 10px;border-radius:999px;
-  font-size:.8rem;color:var(--muted);background:var(--chip);overflow-wrap:anywhere}
-.pdot{flex:none;width:8px;height:8px;border-radius:50%;border:1.5px solid currentColor;align-self:center}
+.dline[data-stage="queued"] .spin{animation:pulse 2.4s ease-in-out infinite}
+@media (prefers-reduced-motion: reduce){.dline[data-stage="queued"] .spin{animation:none}}
+/* Presence: a dot and its text; it carries "working", so the row below hides. */
+.presence{flex:none;display:flex;align-items:center;gap:6px;max-width:100%;min-width:0;font-size:12px;color:var(--muted)}
+.ptext{min-width:0;overflow-wrap:anywhere}
+.pdot{flex:none;width:7px;height:7px;border-radius:50%;border:1.5px solid currentColor}
 .presence[data-state="task"]{color:var(--run)}
 .presence[data-state="task"] .pdot{background:currentColor;animation:pulse 1.6s ease-in-out infinite}
 .presence[data-state="maybe"]{color:var(--needs)}
 .presence[data-state="maybe"] .pdot{background:currentColor}
 @media (prefers-reduced-motion: reduce){.presence .pdot{animation:none}}
-.dline[data-stage="queued"] .spin{animation:pulse 2.4s ease-in-out infinite}
-@media (prefers-reduced-motion: reduce){.dline[data-stage="queued"] .spin{animation:none}}
-.work{flex:none;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 7px;font-size:.85rem;color:var(--muted);min-width:0}
+.chat:has(> .presence[data-state="task"]) > .work{display:none}
+.work{flex:none;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 6px;min-width:0;font-size:12px;color:var(--muted)}
 .work .wtext{overflow-wrap:anywhere;min-width:0}
 .work .wtime::before{content:"· "}
 .work .wtime{font-variant-numeric:tabular-nums}
-.spin{display:inline-block;color:#d97757;font-size:1.05em;line-height:1;animation:spin 2.4s linear infinite}
+.spin{display:inline-block;color:var(--spark);font-size:1.05em;line-height:1;animation:spin 2.4s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion: reduce){.spin{animation:none}}
-.composer{flex:none;position:relative;display:flex}
-.composer textarea{flex:1;min-width:0;min-height:2.9em;max-height:10em;resize:none;font:inherit;line-height:1.45;color:var(--fg);
-  background:var(--card);border:1px solid var(--line);border-radius:16px;padding:9px 48px 9px 14px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
-.composer textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.composer button{position:absolute;right:7px;bottom:7px;width:32px;height:32px;padding:0;border-radius:50%;font-size:1rem;
-  font-weight:700;color:#fff;background:#c96442}
-.composer button:disabled{opacity:.45}
-/* ---- Design polish (desktop): one look with the chat. Warm neutrals, the
-   chat's system font, quiet window chrome and calm motion. All pairs below
-   pass WCAG AA (4.5:1 or better) in both themes. ---- */
-:root{--body:-apple-system,system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
-  --bg:#f5f4f1;--card:#ffffff;--fg:#1f1e1d;--muted:#6b6660;--line:#e3dfd9;--done:#5f5a54;--done-bg:#efece7;
-  --raise:0 0 0 .5px rgba(31,30,29,.05),0 1px 2px rgba(31,30,29,.06),0 6px 18px -8px rgba(31,30,29,.14);
-  --raise-hi:0 0 0 .5px rgba(31,30,29,.06),0 2px 4px rgba(31,30,29,.07),0 12px 28px -10px rgba(31,30,29,.2);
-  --press:0 1px 2px rgba(31,30,29,.12),0 0 0 .5px rgba(31,30,29,.08);--ease:cubic-bezier(.2,0,0,1)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#1a1918;--card:#232220;--fg:#ece9e4;--muted:#a7a29b;--line:#363431;--done:#a7a29b;--done-bg:#2c2b28;
-  --raise:0 0 0 .5px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.35),0 8px 20px -8px rgba(0,0,0,.55);
-  --raise-hi:0 0 0 .5px rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.4),0 14px 30px -10px rgba(0,0,0,.65);
-  --press:0 1px 2px rgba(0,0,0,.45),inset 0 .5px 0 rgba(255,255,255,.06)}}
-:root[data-theme="dark"]{
-  --bg:#1a1918;--card:#232220;--fg:#ece9e4;--muted:#a7a29b;--line:#363431;--done:#a7a29b;--done-bg:#2c2b28;
-  --raise:0 0 0 .5px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.35),0 8px 20px -8px rgba(0,0,0,.55);
-  --raise-hi:0 0 0 .5px rgba(0,0,0,.55),0 2px 4px rgba(0,0,0,.4),0 14px 30px -10px rgba(0,0,0,.65);
-  --press:0 1px 2px rgba(0,0,0,.45),inset 0 .5px 0 rgba(255,255,255,.06)}
-body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
-main{max-width:760px;gap:16px}
-h1{font-size:.72rem;letter-spacing:.07em}
-#summary,#grid-summary{font-size:1.4rem;font-weight:600;letter-spacing:-.012em;line-height:1.25}
-header{gap:5px}
-/* Segmented controls (view switch, filter) and plain buttons. */
-nav,.seg{padding:3px;gap:2px;border-radius:10px;background:var(--done-bg);box-shadow:inset 0 0 0 .5px rgba(0,0,0,.04)}
-nav button,.seg button{border-radius:7px;font-weight:550}
-.seg button{padding:4px 12px}
-nav button[aria-pressed="true"],.seg button[aria-pressed="true"]{box-shadow:var(--press)}
-nav button:not([aria-pressed="true"]):hover,.seg button:not([aria-pressed="true"]):hover{color:var(--fg)}
-#grid-reset{padding:4px 12px;border-radius:8px;font-weight:550;box-shadow:0 1px 1px rgba(0,0,0,.04)}
-#grid-reset:hover{background:var(--done-bg)}
-.toolbar{gap:8px 14px}
-/* Runs: soft cards with a slim state edge. */
-ul{gap:12px}
-li.run{border-radius:12px;border-left-width:3px;padding:13px 16px 14px;gap:6px;box-shadow:var(--raise)}
-li.run:hover{box-shadow:var(--raise-hi)}
-h2{font-weight:600;letter-spacing:-.005em}
-li.run h2{font-size:1.02rem}
-.pill,.badge,.qchip{box-shadow:inset 0 0 0 1px color-mix(in srgb,currentColor 16%,transparent);letter-spacing:.01em}
-.links{gap:18px}
-dl{gap:3px 16px}
-/* Windows: one hairline border, a soft lift, a slim run colour on top. */
-#coords{gap:12px;padding:2px 2px 6px}
-.tile{border-radius:12px;box-shadow:var(--raise)}
-.tile::before{height:2px}
-.tile.coord{border-color:color-mix(in srgb,var(--hue,var(--line)) 55%,var(--line));
-  box-shadow:0 0 0 1px color-mix(in srgb,var(--hue,var(--line)) 22%,transparent),var(--raise)}
-.tile:hover{box-shadow:var(--raise-hi)}
-.tile.coord:hover{box-shadow:0 0 0 1px color-mix(in srgb,var(--hue,var(--line)) 30%,transparent),var(--raise-hi)}
-.tile-head{gap:4px 8px;padding:9px 10px 8px 6px;border-bottom:1px solid var(--line)}
-.tile-head h2{font-size:.92rem;line-height:1.3}
-.coord .tile-head h2{font-size:1.02rem}
-.kicker{font-size:.66rem;letter-spacing:.07em;line-height:1.4}
-.chip{width:9px;height:9px;border-radius:3px}
-.max{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 6px;border-radius:7px;border-color:transparent;background:transparent}
-.max:hover{color:var(--fg);background:var(--done-bg)}
-.grip{border-radius:6px}
-.grip:hover{color:var(--fg);background:var(--done-bg)}
-.resize:hover{color:#d7dde4}
-.tile-body{padding:9px 12px 12px}
-.chat{margin:4px -12px -12px}
-@media (prefers-reduced-motion: no-preference){
-  button,a,li.run,.tile,.composer textarea{transition:color .16s var(--ease),background-color .16s var(--ease),
-    border-color .2s var(--ease),box-shadow .22s var(--ease),opacity .2s var(--ease)}}
-/* ---- end design polish ---- */
-/* Chat attachments: chips over the box and in Kyle's bubbles. */
-.atts{display:flex;flex-wrap:wrap;gap:6px;padding:6px 12px 0}
-.msg .atts{padding:6px 0 0}
-.att{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 8px;font-size:.78rem;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.nowatch-banner{display:flex;align-items:baseline;gap:8px;min-width:0;padding:6px 10px;font-size:12.5px;
+  color:var(--needs);background:var(--needs-bg);border-radius:var(--r-md)}
+.nowatch-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nowatch-banner:hover .nowatch-text,.nowatch-banner:focus-within .nowatch-text{white-space:normal}
+.nowatch-banner a{flex:none}
+.chat-search{flex:none;display:flex;align-items:center;gap:8px}
+.chat-search input{flex:1;min-width:0;height:30px;padding:0 10px;font:inherit;font-size:13px;color:var(--fg);background:var(--surface-2);
+  border:0;border-radius:var(--r-md)}
+.chat-search-count{flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.quote{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;font-size:13px;color:var(--muted);background:var(--surface-2);
+  border-radius:var(--r-md)}
+.quote-text{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.quote-x,.att-x{padding:0 4px;color:var(--muted);background:transparent}
+.atts{display:flex;flex-wrap:wrap;gap:6px}
+.msg .atts{padding-top:6px}
+.att{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:4px 8px;font-size:12px;border-radius:var(--r-md);background:var(--surface-2)}
+.msg .att{background:var(--card)}
 .att .thumb{width:40px;height:40px;object-fit:cover;border-radius:4px}
 .att-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:16em}
 .att-meta{color:var(--muted)}
 .att-meta[data-level="bad"]{color:var(--silent)}
-.att-x{padding:0 4px;color:var(--muted);background:transparent;border:0}
-/* Reply: the button on a selected message and the quote over the box. */
-.msg{position:relative}
-.replybtn{position:absolute;top:-12px;right:6px;z-index:2;padding:2px 10px;font-size:.76rem;color:var(--card);background:var(--accent);border-radius:999px}
-.quote{display:flex;align-items:flex-start;gap:8px;margin:6px 12px 0;padding:4px 8px;font-size:.8rem;color:var(--muted);border-left:3px solid var(--line)}
-.quote-text{flex:1;min-width:0;white-space:pre-wrap;overflow-wrap:anywhere}
-.quote-x{padding:0 4px;color:var(--muted);background:transparent;border:0}
-.msg .plain blockquote{margin:0 0 4px;padding-left:10px;border-left:3px solid var(--line);color:var(--muted)}
-/* Close idle agents and its auto toggle. */
-#grid-close-idle,#grid-autoclose{color:var(--accent);background:var(--card);border:1px solid var(--line);font-size:.8rem;padding:4px 12px;border-radius:8px;font-weight:550}
-#grid-autoclose[aria-pressed="true"]{background:var(--done-bg);box-shadow:var(--press)}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-/* Listening pill, waiting badge, shortcuts help, no-watcher banner and chat
-   search: functional, existing tokens only. */
-.listen-pill{margin:0;font-size:.78rem;font-weight:600;padding:2px 10px;border-radius:999px;color:var(--run);background:var(--run-bg)}
-.listen-pill[data-state="off"]{color:var(--needs);background:var(--needs-bg)}
-.waiting-badge{font-size:.78rem;padding:2px 10px;border-radius:999px;color:var(--needs);background:var(--needs-bg)}
-.keys-btn{color:var(--muted);background:var(--card);border:1px solid var(--line);font-size:.8rem;padding:2px 9px}
-.keys-help{position:fixed;z-index:7;top:56px;right:16px;width:300px;padding:12px 14px;font-size:.85rem;
-  background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--raise-hi)}
-.keys-help h2{font-size:.9rem;margin:0 0 8px}
-.keys-help ul{gap:6px}
-.keys-help kbd{font-family:var(--mono);font-size:.78rem;padding:0 5px;border:1px solid var(--line);border-radius:4px;background:var(--done-bg)}
-.keys-close{margin-top:10px;color:var(--accent);border:1px solid var(--line);padding:3px 11px}
-.nowatch-banner{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;padding:5px 10px;font-size:.8rem;
-  color:var(--needs);background:var(--needs-bg);border-radius:6px}
-.dline[data-stage="posted"]{color:var(--needs)}
-.chat-search{flex:none;display:flex;align-items:center;gap:8px}
-.chat-search input{flex:1;min-width:0;font:inherit;font-size:.85rem;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:3px 8px}
-.chat-search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.chat-search-count{flex:none;font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.composer{flex:none;position:relative;display:flex}
+.composer textarea{flex:1;min-width:0;min-height:2.9em;max-height:10em;resize:none;padding:10px 48px 10px 14px;font:inherit;line-height:1.45;
+  color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--shadow-1)}
+.composer textarea::placeholder{color:var(--muted)}
+.composer textarea:focus{border-color:var(--accent)}
+.composer textarea:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.composer button{position:absolute;right:8px;bottom:8px;width:30px;height:30px;padding:0;border-radius:50%;font-size:15px;font-weight:600;
+  color:var(--on-accent);background:var(--accent)}
+/* ---- popovers: shortcuts help ---- */
+.keys-help{position:absolute;z-index:8;top:calc(100% + 8px);right:0;width:320px;padding:14px 16px;font-size:13px;
+  background:var(--card);border-radius:var(--r-xl);box-shadow:var(--shadow-pop)}
+.keys-help h2{font-size:14px;margin:0 0 10px}
+.keys-help ul{gap:8px}
+.keys-help kbd{font-family:var(--mono);font-size:11.5px;padding:1px 5px;border-radius:5px;background:var(--surface-2)}
+.keys-close{margin-top:12px;height:28px;padding:0 12px;color:var(--accent);background:var(--accent-soft)}
+/* ---- motion: colour fast, shadow and opacity a little slower; popovers
+   rise 4px. No entrance animation on windows or rows (re-parenting would
+   restart it). ---- */
+@keyframes pop{from{opacity:0;transform:translateY(4px)}}
+@media (prefers-reduced-motion: no-preference){
+  button,a,summary,select,.composer textarea,.chat-search input{transition:color var(--t-fast) var(--ease),
+    background-color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),box-shadow var(--t-med) var(--ease),
+    opacity var(--t-med) var(--ease)}
+  .tile,li.run,.tile-head>.wacts{transition:box-shadow var(--t-med) var(--ease),opacity var(--t-med) var(--ease)}
+  .more-pop,.tray-pop,.keys-help{animation:pop 160ms var(--ease)}}
 </style>
 <main id="main" data-view="runs">
+<div class="appbar">
 <nav id="view-nav" aria-label="View">
 <button type="button" id="view-runs" aria-pressed="true">Runs</button>
 <button type="button" id="view-grid" aria-pressed="false">Grid</button>
 </nav>
-<div id="getapp" hidden>
+<details id="app-more" class="more"><summary id="app-more-sum" aria-label="More actions" title="More actions">⋯</summary>
+<div class="more-pop" role="group" aria-label="More actions"><div class="more-grid">
+<button type="button" id="grid-close-idle" disabled>Close idle agents</button>
+<button type="button" id="grid-autoclose" aria-pressed="false">Auto-close idle agents</button>
+<button type="button" id="grid-reset">Reset layout</button>
+</div><div id="getapp" hidden>
 <button type="button" id="getapp-btn" aria-expanded="false" aria-controls="getapp-menu">Get desktop app</button>
 <div id="getapp-menu" role="group" aria-label="Desktop app" hidden>
 <p>Dashboard</p>
@@ -393,6 +437,7 @@ dl{gap:3px 16px}
 <button type="button" id="getapp-dash-mac">Mac</button>
 </div>
 <p id="getapp-hint" aria-live="polite" hidden></p>
+</div></div></details>
 </div>
 <section id="runs-view">
 <header>
@@ -416,11 +461,9 @@ dl{gap:3px 16px}
 </div>
 <label id="grid-coord-label">Coordinator <select id="grid-coord"><option value="">All</option></select></label>
 <p id="grid-coord-note" hidden></p><button type="button" id="grid-coord-forget" hidden>Forget</button>
-<p id="grid-count"></p>
-<p id="grid-conn"></p>
-<p id="grid-listen" class="listen-pill" role="status" hidden></p>
+<span class="tb-spacer" aria-hidden="true"></span>
 <button type="button" id="grid-waiting" class="waiting-badge" hidden></button>
-<p id="grid-hidden" hidden></p>
+<p id="grid-listen" class="listen-pill" role="status" hidden></p>
 <details id="grid-tray" hidden>
 <summary id="grid-tray-sum">Hidden (0)</summary>
 <div class="tray-pop">
@@ -428,24 +471,26 @@ dl{gap:3px 16px}
 <button type="button" id="grid-showall">Show all</button>
 </div>
 </details>
-<button type="button" id="grid-close-idle" disabled>Close idle agents</button>
-<button type="button" id="grid-autoclose" aria-pressed="false">Auto-close idle agents</button>
-<button type="button" id="grid-reset">Reset layout</button>
-<button type="button" id="grid-keys-btn" class="keys-btn" aria-expanded="false" aria-controls="grid-keys" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
+<div class="tb-status">
+<p id="grid-conn"></p>
+<p id="grid-count"></p>
+<p id="grid-hidden" hidden></p>
 </div>
+<button type="button" id="grid-keys-btn" class="keys-btn" aria-expanded="false" aria-controls="grid-keys" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">?</button>
 <div id="grid-keys" class="keys-help" role="dialog" aria-labelledby="grid-keys-title" tabindex="-1" hidden>
 <h2 id="grid-keys-title">Keyboard shortcuts</h2>
 <ul>
 <li><kbd>/</kbd> Type to the coordinator (the maximized one, else the first shown)</li>
 <li><kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> Maximize the Nth window</li>
-<li><kbd>Esc</kbd> Close this help, clear a quote, close a search, or restore a maximized window</li>
+<li><kbd>Esc</kbd> Close the ⋯ menu or this help, clear a quote, close a search, or restore a maximized window</li>
 <li><kbd>?</kbd> Show or hide this help</li>
 </ul>
 <button type="button" id="grid-keys-close" class="keys-close">Close</button>
 </div>
+</div>
 <div id="coords" aria-label="Windows"></div>
 <p id="grid-live" class="sr" aria-live="polite"></p>
-<footer id="grid-foot">Only the master writes the windows. The chat box sends your message to the coordinator as a comment sent to Claude; its replies show above the box. Maximize a window to focus on it (Esc or Restore goes back); hide one with – and bring it back from Hidden. Drag a window by its handle (or press Enter on it, then the arrow keys) to move it, and its corner (or Shift+arrows) to resize it; the layout stays on this device. Press ? for keyboard shortcuts.</footer>
+<footer id="grid-foot" tabindex="0">Only the master writes the windows. The chat box sends your message to the coordinator as a comment sent to Claude; its replies show above the box. Maximize a window to focus on it (Esc or Restore goes back); hide one with – and bring it back from Hidden. Drag a window by its handle (or press Enter on it, then the arrow keys) to move it, and its corner (or Shift+arrows) to resize it; the layout stays on this device. Press ? for keyboard shortcuts.</footer>
 </section>
 </main>
 <script>
@@ -928,6 +973,8 @@ dl{gap:3px 16px}
   const $keys = document.getElementById("grid-keys");
   const $keysBtn = document.getElementById("grid-keys-btn");
   const $keysClose = document.getElementById("grid-keys-close");
+  const $appMore = document.getElementById("app-more");
+  const $appMoreSum = document.getElementById("app-more-sum");
 
   function setGridConn(msg, bad) {
     $gridConn.textContent = msg;
@@ -1491,6 +1538,19 @@ dl{gap:3px 16px}
     if (coord) {
       t.runLine = el("p", "runid");
       t.dyn = el("div", "coord-body");
+      // One meta line (phase, blockers, elapsed) and History: the latest
+      // status line folded over the rest and the run id. Built once, so
+      // History keeps its open state across renders.
+      t.meta = el("div", "coord-meta");
+      t.hist = el("details", "history");
+      t.histSum = el("summary");
+      t.histAt = el("span", "at");
+      t.histLast = el("span", "history-last");
+      t.histCount = el("span", "history-count");
+      t.histSum.append(t.histAt, t.histLast, t.histCount);
+      t.histBody = el("div", "history-body");
+      t.hist.append(t.histSum, t.histBody);
+      t.dyn.append(t.meta, t.hist);
       t.chat = el("div", "chat");
       t.chatNote = el("p", "hint");
       t.logWrap = el("div", "logwrap");
@@ -1565,6 +1625,7 @@ dl{gap:3px 16px}
       t.banner.setAttribute("role", "note");
       t.bannerOpen = link("Open session", SESSION_PREFIX);
       t.banner.append(el("span", "nowatch-text", NO_WATCHER), t.bannerOpen);
+      t.banner.title = NO_WATCHER;
       t.banner.hidden = true;
       t.bannerOpen.hidden = true;
       // Search: filters this transcript to the messages containing the text.
@@ -1592,7 +1653,7 @@ dl{gap:3px 16px}
         setSearch(t, false);
       });
       t.chat.append(t.chatNote, t.searchBox, t.logWrap, t.work, t.pres, t.banner, t.quoteBox, t.attBox, t.form, t.sendHint);
-      t.body.append(t.runLine, t.dyn, t.chat);
+      t.body.append(t.dyn, t.chat);
       t.bubbles = Object.create(null);
       t.openActs = Object.create(null);
       t.hintText = "";
@@ -1600,6 +1661,16 @@ dl{gap:3px 16px}
       t.logSeen = false;
       t.stick = false;
       t.log.addEventListener("scroll", () => { if (nearBottom(t.log)) t.pill.hidden = true; });
+      // Opening or closing History resizes the log: one that was at the
+      // bottom stays there (read at the press, before the details toggle).
+      t.histPin = false;
+      const pin = () => { t.histPin = nearBottom(t.log); };
+      t.histSum.addEventListener("pointerdown", pin);
+      t.histSum.addEventListener("keydown", pin);
+      t.hist.addEventListener("toggle", () => {
+        if (t.histPin) { scrollEnd(t.log); t.pill.hidden = true; }
+        t.histPin = false;
+      });
       t.pill.addEventListener("click", () => { scrollEnd(t.log); t.pill.hidden = true; });
       t.input.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && t.quote) {
@@ -1684,15 +1755,29 @@ dl{gap:3px 16px}
       round: p.round, hue, session: p.session, prs: p.prs});
     t.el.dataset.state = p.state;
     setText(t.runLine, `run ${p.runId}`);
-    const dyn = [];
+    // The meta line: one row per run row when there are several (each with
+    // its blocker), else "phase · elapsed" with the blocker under it.
+    const meta = [];
+    const notes = [];
     const multi = p.items.length > 1;
     for (const {r, c} of p.items) {
       const name = multi ? (text(r.feature, 60) || text(r._id, 60) || "?") + ": " : "";
-      dyn.push(el("p", "when", name + whenText(r, c, now)));
+      meta.push(el("p", "when", name + whenText(r, c, now)));
       const note = [c.note, text(r.blocker, 160)].filter(Boolean).join(" · ");
-      if (note) dyn.push(el("p", "blocker", note));
+      if (note) (multi ? meta : notes).push(el("p", "blocker", note));
     }
-    dyn.push(el("p", "when", p.elapsedMs === null ? "elapsed ?" : `elapsed ${duration(p.elapsedMs)}`));
+    meta.push(el("p", "when", p.elapsedMs === null ? "elapsed ?" : `elapsed ${duration(p.elapsedMs)}`), ...notes);
+    t.meta.replaceChildren(...meta);
+    if (multi) t.meta.dataset.multi = ""; else delete t.meta.dataset.multi;
+    // History: the summary shows the newest status line; the body holds
+    // them all (oldest first) and the run id.
+    const last = p.lines.length ? p.lines[p.lines.length - 1] : null;
+    setText(t.histAt, last ? clock(last.at) : "");
+    t.histAt.hidden = !last;
+    setText(t.histLast, last ? last.text : "No status lines yet");
+    setText(t.histCount, last ? `History (${p.lines.length})` : "Details");
+    t.histSum.title = last ? last.text : "";
+    const hist = [];
     if (p.lines.length) {
       const ul = el("ul", "lines");
       ul.setAttribute("aria-label", "Status");
@@ -1701,9 +1786,10 @@ dl{gap:3px 16px}
         li.append(el("span", "at", clock(line.at)), el("span", "", line.text));
         ul.append(li);
       }
-      dyn.push(ul);
+      hist.push(ul);
     }
-    t.dyn.replaceChildren(...dyn);
+    hist.push(t.runLine);
+    t.histBody.replaceChildren(...hist);
     fillChat(t, p);
   }
 
@@ -1889,18 +1975,21 @@ dl{gap:3px 16px}
   }
 
   // ---- keyboard shortcuts (Grid only) ----
-  // Esc: close the help, else restore a maximized window (a quote or a
-  // search handles its own Esc first). While typing in a field only Esc
-  // counts. "/" goes to a chat box, Alt+1..9 maximizes the Nth window shown
-  // and "?" toggles the help.
+  // Esc: close the ⋯ menu (Runs too), else the help, else restore a
+  // maximized window (a quote or a search handles its own Esc first). While
+  // typing in a field only Esc counts. "/" goes to a chat box, Alt+1..9
+  // maximizes the Nth window shown and "?" toggles the help.
   function typing(e) {
     const tg = e.target;
     const tag = tg && typeof tg.tagName === "string" ? tg.tagName.toUpperCase() : "";
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || !!(tg && tg.isContentEditable === true);
   }
   function onDocKey(e) {
-    if (!e || view !== "grid" || e.defaultPrevented) return;
+    if (!e || e.defaultPrevented) return;
     const stop = () => { if (e.preventDefault) e.preventDefault(); };
+    // The ⋯ menu (in both views) closes first.
+    if (e.key === "Escape" && $appMore.open) { stop(); closeMore(true); return; }
+    if (view !== "grid") return;
     if (e.key === "Escape") {
       // An open search in the window that has focus closes first.
       const at = tileOf(e.target) || tileOf(document.activeElement);
@@ -1947,6 +2036,24 @@ dl{gap:3px 16px}
     const top = maximized === null ? null : tileEls[maximized] || null;
     const list = top ? [top] : workTiles;
     return list.find((t) => t.coord && !t.chat.hidden && !t.form.hidden) || null;
+  }
+  // ---- the ⋯ menu and the Hidden menu: closed by a press outside ----
+  function within(node, root) {
+    let n = node;
+    for (let i = 0; n && i < 60; i += 1) {
+      if (n === root) return true;
+      n = n.parentNode;
+    }
+    return false;
+  }
+  function closeMore(focus) {
+    $appMore.open = false;
+    if (focus) focusEl($appMoreSum);
+  }
+  function onDocPointer(e) {
+    const tg = e ? e.target : null;
+    if ($appMore.open && !within(tg, $appMore)) closeMore(false);
+    if ($gridTray.open && !within(tg, $gridTray)) $gridTray.open = false;
   }
   let keysBack = null;      // what had focus before the help opened
   function showKeys(open) {
@@ -2609,6 +2716,8 @@ dl{gap:3px 16px}
     t.dtime.hidden = !line.time;
     t.dopen.hidden = !line.open;
     if (line.open && t.dopen.href !== session) t.dopen.href = session;
+    // The line shows as a small icon or a clipped line; the title has it all.
+    t.dline.title = line.text + (line.time ? ` · ${line.time}` : "");
   }
 
   // Activity rows: one compact muted line each, text only; a run of 2 or
@@ -3306,15 +3415,16 @@ dl{gap:3px 16px}
 
   $viewRuns.addEventListener("click", () => setView("runs", true));
   $viewGrid.addEventListener("click", () => setView("grid", true));
-  $gridReset.addEventListener("click", resetLayout);
+  $gridReset.addEventListener("click", () => { closeMore(true); resetLayout(); });
   $gridShowAll.addEventListener("click", showAll);
-  $closeIdle.addEventListener("click", closeIdle);
+  $closeIdle.addEventListener("click", () => { closeMore(false); closeIdle(); });
   $autoClose.addEventListener("click", () => setAutoClose(!(autoClose === null ? loadAutoClose() : autoClose)));
   $filterActive.addEventListener("click", () => setFilter("active"));
   $filterAll.addEventListener("click", () => setFilter("all"));
   $coordPick.addEventListener("change", () => setCoord($coordPick.value));
   $coordForget.addEventListener("click", () => setCoord(""));
   document.addEventListener("keydown", onDocKey);
+  document.addEventListener("pointerdown", onDocPointer);
   $gridWaiting.addEventListener("click", goWaiting);
   $keysBtn.addEventListener("click", () => showKeys($keys.hidden));
   $keysClose.addEventListener("click", () => showKeys(false));
