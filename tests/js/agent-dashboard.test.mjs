@@ -2037,8 +2037,9 @@ test('chat: the mirror is read from Kyle\'s private path, newest 200 by time, an
   assert.deepEqual(list.slice(1).map(bubbleText), ['first', 'second', 'third']);
   assert.deepEqual(list.map((b) => b.dataset.kind), ['update', 'update', 'update', 'report'], 'unknown kinds fall back');
   assert.equal(byClass(list[0], 'at')[0].textContent, '?');
-  assert.match(byClass(list[3], 'at')[0].textContent, /\d/, 'each bubble shows its time');
-  assert.equal(byClass(list[3], 'who')[0].textContent, 'Coordinator · report');
+  assert.match(byClass(list[3], 'at')[0].textContent, /\d/, 'each bubble carries its time (shown on hover or after a gap)');
+  assert.equal(byClass(list[3], 'who')[0].textContent, 'Coordinator', 'no "Coordinator · report" header');
+  assert.equal(byClass(list[3], 'tag')[0].textContent, 'Report');
   // One bubble per doc id, reused while it doesn't change.
   const first = list[1];
   chatSnap(page, [mirror('m4', { text: 'fourth', at: iso(NOW) }), mirror('m3', { text: 'third', at: iso(NOW - MIN), kind: 'report' }),
@@ -2406,8 +2407,7 @@ test('delivery: a mirrored copy alone counts as seen; 2 minutes with no pickup t
   assert.equal(stage(page)[0], 'delivered');
   page.setNow(NOW + 121e3);
   page.intervals[0].fn();
-  assert.deepEqual(stage(page), ['late',
-    "Coordinator hasn't picked this up yet. It may be busy; it checks for missed messages after each reply.", '']);
+  assert.deepEqual(stage(page), ['late', 'Not picked up yet. Resend to wake the coordinator again.', '']);
   const open = dline(page).find((e) => e.tagName === 'A')[0];
   assert.deepEqual([open.hidden, open.textContent, open.href], [false, 'Open session', SESSION]);
   // A status for something else (no seen_ref) doesn't count as seen.
@@ -2530,7 +2530,7 @@ test('delivery: the reply clears the line even when Kyle\'s clock runs ahead of 
 
 // ---- activity rows ----
 
-test('activity: one compact text-only row each; consecutive ones collapse into an expandable "N steps" row', async () => {
+test('activity: one compact text-only row each; consecutive ones collapse into a one-line summary that expands', async () => {
   const page = await chatPage();
   chatSnap(page, [
     mirror('a4', { kind: 'activity', text: 'Started the judge', at: iso(NOW - MIN) }),
@@ -2544,9 +2544,12 @@ test('activity: one compact text-only row each; consecutive ones collapse into a
   const [group, , single] = kids;
   const toggle = byClass(group, 'acts-toggle')[0];
   const list = byClass(group, 'acts-list')[0];
-  assert.deepEqual([toggle.textContent, toggle.getAttribute('aria-expanded'), list.hidden], ['3 steps ▸', 'false', true]);
+  assert.equal(byClass(toggle, 'acts-sum')[0].children.length, 0, 'the summary is text');
+  assert.match(toggle.textContent, /^Ran tests, <img src=x onerror=alert\(1\)> \*\*not bold\*\* w+… and pushed claude\/x›$/);
+  assert.deepEqual([toggle.getAttribute('aria-label').startsWith('3 steps: Ran tests, '), toggle.getAttribute('aria-expanded'), list.hidden],
+    [true, 'false', true]);
   toggle.click();
-  assert.deepEqual([toggle.textContent, toggle.getAttribute('aria-expanded'), list.hidden], ['3 steps ▾', 'true', false]);
+  assert.deepEqual([toggle.getAttribute('aria-expanded'), list.hidden], ['true', false]);
   const rows = byClass(list, 'act');
   assert.deepEqual(rows.map((r) => byClass(r, 'icon')[0].textContent), ['✓', '•', '✓']);
   const hostile = byClass(rows[1], 'atext')[0];
@@ -2554,7 +2557,8 @@ test('activity: one compact text-only row each; consecutive ones collapse into a
   assert.equal(hostile.textContent.length, 200);
   assert.ok(hostile.textContent.includes('**not bold**'));
   assert.equal(page.ids.coords.find((e) => e.tagName === 'IMG').length, 0);
-  assert.deepEqual([byClass(single, 'icon')[0].textContent, byClass(single, 'atext')[0].textContent], ['•', 'Started the judge']);
+  assert.deepEqual([byClass(single, 'icon').length, byClass(single, 'atext')[0].textContent], [0, 'Started the judge'],
+    'a lone step is one muted line, like a collapsed tool line');
   // Expanded stays expanded across a re-render.
   runSnap(page, [runRow({ phase: 'judging' })]);
   assert.equal(byClass(chatOf(page).log.children[0], 'acts-list')[0].hidden, false);
@@ -3924,4 +3928,194 @@ test('history: opening it keeps a transcript that was at the bottom pinned there
   c.log.scrollTop = 580;
   h.dispatch('toggle');
   assert.equal(c.log.scrollTop, 580);
+});
+
+// ---- the chat, round 3: full-width maximize, Claude Code formatting, Resend ----
+
+test('maximized: the chat spans the window (no 860px column) with 28px sides; the meta is one line and History starts closed', async () => {
+  assert.doesNotMatch(PAGE, /max-width:860px/, 'no centred column');
+  assert.match(PAGE, /\.tile\[data-max\] \.tile-head\{padding-inline:28px\}/);
+  assert.match(PAGE, /\.tile\[data-max\] \.tile-body\{padding:0 28px 20px\}/);
+  assert.match(PAGE, /\.tile\[data-max\] \.coord-meta\{overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}/);
+  assert.match(PAGE, /\.tile\[data-max\] \.md>:is\(p,ul,ol,blockquote,h3,h4,h5,h6\)\{max-width:120ch\}/, 'only prose keeps a line length');
+  const page = await chatPage();
+  const [panel] = panels(page);
+  const h = histOf(panel);
+  h.open = true;
+  button(panel, '⤢').click();
+  assert.equal(panel.dataset.max, '');
+  assert.equal(h.open, false, 'History folds to its summary line');
+  assert.match(byClass(panel, 'coord-meta')[0].title, /elapsed/, 'the clipped meta line keeps its full text in the title');
+  // It still opens on a click, and a re-render leaves it open.
+  h.open = true;
+  runSnap(page, [runRow({ phase: 'judging' })]);
+  assert.equal(h.open, true);
+});
+
+test('messages: no per-message header; the time shows only after a 5-minute gap (else on hover); a tag only for question and report', async () => {
+  assert.match(PAGE, /\.msg:not\(\[data-stamp\]\) \.meta \.at\{position:absolute;[^}]*opacity:0/);
+  assert.match(PAGE, /\.msg:hover \.meta \.at\{opacity:1\}/);
+  const page = await chatPage();
+  chatSnap(page, [
+    mirror('q', { kind: 'question', text: 'Ship it?', at: iso(NOW - 2 * MIN) }),
+    mirror('r', { kind: 'report', text: 'Report', at: iso(NOW - 3 * MIN) }),
+    mirror('k', { from: 'kyle', text: 'ok', at: iso(NOW - 10 * MIN) }),
+    mirror('u2', { kind: 'reply', text: 'b', at: iso(NOW - 20 * MIN) }),
+    mirror('u1', { kind: 'update', text: 'a', at: iso(NOW - 24 * MIN) }),
+  ]);
+  const list = bubbles(page);
+  assert.deepEqual(list.map((b) => b.dataset.stamp === ''), [true, false, true, true, false],
+    'the first, then each more than 5 minutes after the one before');
+  assert.deepEqual(list.map((b) => byClass(b, 'who')[0].textContent), ['Coordinator', 'Coordinator', 'You', 'Coordinator', 'Coordinator']);
+  assert.deepEqual(list.map((b) => byClass(b, 'tag').map((e) => e.textContent).join()), ['', '', '', 'Report', 'Question']);
+  assert.ok(list.every((b) => /\d/.test(byClass(b, 'at')[0].textContent)), 'the time is there for hover');
+  assert.ok(list.every((b) => !b.textContent.includes('·')), 'no "Coordinator · reply · time" line');
+});
+
+test('markdown: GitHub PR and issue URLs render as owner/repo#n chips (bare or self-labelled); lookalikes stay text', async () => {
+  const { api } = await loadPage();
+  const root = api.renderMarkdown([
+    'Merged https://github.com/kylechen839-max/Claude-Personal-Assistant/pull/32. See https://github.com/o/r.x/issues/7',
+    '[https://github.com/a/b/pull/9](https://github.com/a/b/pull/9) and [PR #30](https://github.com/a/b/pull/30)',
+    '| PR | State |', '|---|---|', '| https://github.com/a/b/pull/1 | Merged |',
+  ].join('\n'));
+  const chips = root.find((e) => e.tagName === 'A' && e.className === 'ghchip');
+  assert.deepEqual(chips.map((a) => [a.textContent, a.href, a.target, a.rel]), [
+    ['⇅kylechen839-max/Claude-Personal-Assistant#32', 'https://github.com/kylechen839-max/Claude-Personal-Assistant/pull/32', '_blank', 'noopener noreferrer'],
+    ['◎o/r.x#7', 'https://github.com/o/r.x/issues/7', '_blank', 'noopener noreferrer'],
+    ['⇅a/b#9', 'https://github.com/a/b/pull/9', '_blank', 'noopener noreferrer'],
+    ['⇅a/b#1', 'https://github.com/a/b/pull/1', '_blank', 'noopener noreferrer'],
+  ]);
+  assert.equal(chips[0].children[0].getAttribute('aria-hidden'), 'true', 'the glyph is decoration');
+  assert.equal(chips[0].title, 'Pull request kylechen839-max/Claude-Personal-Assistant#32');
+  assert.ok(root.textContent.includes('#32. See'), 'the full stop stays text');
+  const plainLinks = root.find((e) => e.tagName === 'A' && e.className !== 'ghchip');
+  assert.deepEqual(plainLinks.map((a) => [a.textContent, a.href]), [['PR #30', 'https://github.com/a/b/pull/30']], 'a labelled link keeps its label');
+  for (const s of ['http://github.com/a/b/pull/1', 'https://github.com.evil.example/a/b/pull/1', 'https://github.com/a/b/pull/1/files',
+    'https://github.com/a/b/pull/1#x', 'https://github.com/a/b/pull/x', 'https://github.com/-a/b/pull/1', 'xhttps://github.com/a/b/pull/1',
+    'https://github.com/a/b/pulls/1', 'https://github.com/a/b/pull/12345678', 'https://github.com/a/b/pull/1?x=<b>']) {
+    const r = api.renderMarkdown(s);
+    assert.equal(count(r, 'A'), 0, s);
+    assert.equal(r.textContent, s, s);
+  }
+  const t0 = performance.now();
+  api.renderMarkdown('https://github.com/'.repeat(600) + 'https://github.com/a/b/pull/1 '.repeat(200));
+  assert.ok(performance.now() - t0 < 200, 'stays linear');
+});
+
+test('markdown: prose, lists and tables are styled like Claude Code (15px, 1.6, 12px blocks, bordered tables, code chips)', () => {
+  assert.match(PAGE, /\.md\{font-size:15px;line-height:1\.6\}/);
+  assert.match(PAGE, /\.md>\*\{margin:12px 0 0\}/);
+  assert.match(PAGE, /\.md li\{display:list-item;margin:6px 0 0;/);
+  assert.match(PAGE, /\.md \.tablewrap\{[^}]*border:1px solid var\(--line\)/);
+  assert.match(PAGE, /\.md thead th\{[^}]*background:var\(--surface-2\)/);
+  assert.match(PAGE, /\.md th,\.md td\{padding:8px 14px;/);
+  assert.match(PAGE, /\.md code\{[^}]*background:var\(--surface-2\);border:1px solid var\(--line\)/);
+});
+
+test('resend: a message not picked up offers Resend once; it re-sends the same text, same nonce, in the same thread', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  await sendIn(c, 'line one\nline two');
+  const first = sentText(page);
+  const nonce = /#([a-z0-9]{6})\]/.exec(first)[1];
+  const btn = () => byClass(dline(page), 'dresend')[0];
+  assert.equal(btn().hidden, true, 'no Resend while Delivered');
+  page.setNow(NOW + 121e3);
+  page.intervals[0].fn();
+  assert.deepEqual(stage(page), ['late', 'Not picked up yet. Resend to wake the coordinator again.', '']);
+  assert.deepEqual([btn().hidden, btn().textContent], [false, 'Resend']);
+  assert.equal(dline(page).find((e) => e.tagName === 'A')[0].hidden, false, 'Open session stays');
+  btn().click();
+  await settle();
+  assert.equal(page.comments.calls.send.length, 2);
+  const again = page.comments.calls.send[1];
+  assert.deepEqual(Object.keys(again), ['threadId', 'text'], 'a reply into the same thread');
+  assert.equal(again.threadId, page.comments.calls.send[0].threadId ?? 't1');
+  assert.equal(again.text, `[run ${RUN} #${nonce}] (resent) line one\nline two`);
+  assert.equal(page.comments.calls.anchor.length, 1);
+  assert.equal(bubbles(page).filter((b) => b.dataset.from === 'kyle').length, 1, 'no second bubble');
+  assert.deepEqual(stage(page).slice(0, 1), ['delivered']);
+  assert.equal(byClass(dline(page), 'dtext')[0].textContent, 'Delivered · resent');
+  // Two more minutes: late again, with no second Resend.
+  page.setNow(NOW + 250e3);
+  page.intervals[0].fn();
+  assert.deepEqual(stage(page)[0], 'late');
+  assert.equal(byClass(dline(page), 'dtext')[0].textContent,
+    "Coordinator hasn't picked this up yet. It may be busy; it checks for missed messages after each reply.");
+  assert.equal(btn().hidden, true, 'one resend per message');
+  btn().click();
+  await settle();
+  assert.equal(page.comments.calls.send.length, 2, 'a hidden button does nothing');
+  // Seen on that nonce clears it, as before.
+  statusSnap(page, { status: { state: 'idle', seen_ref: nonce, at: iso(NOW + 260e3) } });
+  assert.equal(stage(page)[0], 'seen');
+});
+
+test('resend: a definite failure gives the resend back, "may have" does not; the box is left alone', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  await sendIn(c, 'hi');
+  page.setNow(NOW + 121e3);
+  page.intervals[0].fn();
+  const btn = () => byClass(dline(page), 'dresend')[0];
+  page.comments.replies.push(() => Promise.reject({ code: 'rate_limited' }));
+  btn().click();
+  await settle();
+  assert.equal(c.hint.textContent, 'Not sent: too many messages. Wait a minute, then press Send.');
+  assert.equal(stage(page)[0], 'late');
+  assert.equal(btn().hidden, false, 'it surely did not post: Resend is offered again');
+  assert.equal(bubbles(page).at(-1).dataset.from, 'kyle');
+  assert.equal(c.input.value, '', 'the box is left alone');
+  page.comments.replies.push(() => Promise.reject({ code: 'upstream_error' }));
+  btn().click();
+  await settle();
+  assert.equal(c.hint.textContent, 'May have been sent; check before resending.');
+  page.setNow(NOW + 250e3);
+  page.intervals[0].fn();
+  assert.equal(stage(page)[0], 'late');
+  assert.equal(btn().hidden, true, 'it may have posted: no third send');
+  assert.equal(page.comments.calls.send.length, 3);
+  assert.match(page.comments.calls.send[2].text, /^\[run [^\]]+ #[a-z0-9]{6}\] \(resent\) hi$/);
+});
+
+test('resend: not offered with no watching session, and never for a plain-comment post', async () => {
+  const page = await chatPage();
+  const c = chatOf(page);
+  await sendIn(c, 'hi');
+  page.comments.state.can = 'no_session';
+  page.setNow(NOW + 121e3);
+  page.ids['view-runs'].click();
+  page.ids['view-grid'].click();
+  await settle();
+  assert.equal(stage(page)[0], 'late');
+  assert.equal(byClass(dline(page), 'dresend')[0].hidden, true);
+  assert.equal(byClass(dline(page), 'dtext')[0].textContent,
+    "Coordinator hasn't picked this up yet. It may be busy; it checks for missed messages after each reply.");
+});
+
+test('resend: the quote and the attachment lines go again, still inside 4000 bytes', async () => {
+  const assets = fakeAssets();
+  const page = await chatPage({ assets });
+  chatSnap(page, [mirror('m1', { text: 'pick one' })]);
+  const c = chatOf(page);
+  page.select(selection(bubbles(page)[0].children[1], 'pick'));
+  replyOf(page).click();
+  paste(c, file('shot.png', 'image/png', 2048));
+  await settle();
+  type(c, 'y'.repeat(5000));
+  enter(c);
+  await settle();
+  const first = sentText(page);
+  const nonce = /#([a-z0-9]{6})\]/.exec(first)[1];
+  page.setNow(NOW + 121e3);
+  page.intervals[0].fn();
+  byClass(dline(page), 'dresend')[0].click();
+  await settle();
+  const again = sentText(page);
+  assert.ok(again.startsWith(`[run ${RUN} #${nonce}] (resent) \n> pick\n\nyyy`), again.slice(0, 80));
+  const line = `\n[attachment: shot.png (image/png, 2 KB) asset:a${'1'.padStart(31, '0')}]`;
+  assert.ok(first.endsWith(line) && again.endsWith(line), again.slice(-120));
+  assert.ok(page.api.utf8Len(again) <= 4000);
+  assert.equal(page.comments.calls.send.length, 2);
 });
