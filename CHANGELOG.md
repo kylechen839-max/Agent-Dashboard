@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Coordinator heartbeat: an hourly workflow posts a passing check on the open claude/heartbeat PR, which wakes the coordinator session so it re-arms its dashboard watch after its container was recycled. Close that PR to stop it.
 - Design skills: `.claude/skills/` now has three vendored, pinned skills
   for UI work (Anthropic `frontend-design`, Vercel `web-design-guidelines`
   with its rules read locally, Addy Osmani `accessibility`), plus
