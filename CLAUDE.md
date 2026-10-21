@@ -18,6 +18,9 @@ in `dashboard/README.md`, and changes to them go in both repos.
   `open-dashboard.command` (LF, executable). "Get desktop app" in the page
   embeds the same text (`LAUNCHER_TEXT`, `LAUNCHER_KINDS`); keep them in
   step, the tests compare them byte for byte.
+- `.claude/skills/`: vendored design skills (`frontend-design`,
+  `web-design-guidelines`, `accessibility`); sources, pins and where
+  these rules win are in `.claude/skills/DESIGN_SKILLS.md`.
 - `tests/`: pytest (`test_agent_dashboard.py`) and node
   (`tests/js/agent-dashboard.test.mjs`).
 

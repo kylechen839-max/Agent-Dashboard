@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Design skills: `.claude/skills/` now has three vendored, pinned skills
+  for UI work (Anthropic `frontend-design`, Vercel `web-design-guidelines`
+  with its rules read locally, Addy Osmani `accessibility`), plus
+  `DESIGN_SKILLS.md` with their sources and where this repo's rules win.
 - Dashboard moved to a new artifact URL (the old one stopped waking the
   coordinator); re-download the desktop launcher from Get desktop app.
   `dashboard/moved.html` (markup and style only) is published over the
